@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room 1 — Staff Panel</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="/shared/hospital-theme.css" />
+</head>
+<body>
+  <div class="staff-shell">
+    <div class="staff-panel teal">
+      <header class="staff-panel-header teal">
+        <div class="staff-dept-badge">
+          <span class="dot"></span>
+          Room 1 — Counter
+        </div>
+        <div class="staff-panel-title">Preliminary Checkup</div>
+        <div class="staff-panel-sub urdu">ابتدائی معائنہ</div>
+      </header>
+
+      <div class="staff-panel-body">
+        <div class="staff-current-box">
+          <div class="staff-current-label">Currently Serving</div>
+          <div class="staff-current-token empty" id="currentToken">—</div>
+        </div>
+
+        <div class="staff-input-row">
+          <input type="number" id="tokenInput" placeholder="Token #" min="1" inputmode="numeric" />
+          <button class="staff-btn staff-btn-call" onclick="callToken()">Call Token</button>
+        </div>
+
+        <div class="staff-quick-row">
+          <button class="staff-btn staff-btn-quick" onclick="adjustToken(-1)">Previous</button>
+          <button class="staff-btn staff-btn-quick" onclick="adjustToken(1)">Next</button>
+        </div>
+
+        <div class="staff-section">
+          <div class="staff-section-label">Display Announcement</div>
+          <div class="staff-presets">
+            <button class="staff-preset-btn" onclick="setPreset('Please proceed to Room 2 for doctor consultation')">Proceed to Room 2</button>
+            <button class="staff-preset-btn" onclick="setPreset('Please wait — doctor will be back shortly')">Doctor unavailable</button>
+            <button class="staff-preset-btn" onclick="setPreset('Prayers break — queue will resume in 15 minutes')">Prayers break</button>
+            <button class="staff-preset-btn" onclick="setPreset('Please bring your previous medical reports and prescription')">Bring reports</button>
+          </div>
+          <textarea class="staff-textarea" id="announceInput" placeholder="Type a custom announcement for the waiting hall display…"></textarea>
+          <div class="staff-announce-row">
+            <button class="staff-btn staff-btn-send" onclick="sendAnnouncement()">Send to Display</button>
+            <button class="staff-btn staff-btn-clear" onclick="clearAnnouncement()">Clear</button>
+          </div>
+        </div>
+
+        <p class="staff-footer-note">Changes appear instantly on the hall display screen.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="staff-toast" id="toast">Token called</div>
+
+  <script>
+    const socket = io();
+    const ROOM = 'room1';
+    let currentToken = null;
+
+    socket.on('state', (state) => {
+      currentToken = state[ROOM].current;
+      const el = document.getElementById('currentToken');
+      el.textContent = currentToken !== null ? currentToken : '—';
+      el.className = 'staff-current-token' + (currentToken !== null ? ' active' : ' empty');
+
+      if (state[ROOM].current !== null) {
+        document.getElementById('tokenInput').value = state[ROOM].current;
+      }
+
+      if (state.announcement) {
+        document.getElementById('announceInput').value = state.announcement;
+      }
+    });
+
+    function callToken() {
+      const val = parseInt(document.getElementById('tokenInput').value, 10);
+      if (!val || val < 1) return;
+      socket.emit('updateToken', { room: ROOM, token: val });
+      showToast(`Token ${val} called`);
+    }
+
+    function adjustToken(delta) {
+      const base = currentToken || 0;
+      const next = Math.max(1, base + delta);
+      document.getElementById('tokenInput').value = next;
+      socket.emit('updateToken', { room: ROOM, token: next });
+      showToast(`Token ${next} called`);
+    }
+
+    function sendAnnouncement() {
+      const text = document.getElementById('announceInput').value.trim();
+      socket.emit('updateAnnouncement', text);
+      showToast('Announcement sent');
+    }
+
+    function clearAnnouncement() {
+      document.getElementById('announceInput').value = '';
+      socket.emit('updateAnnouncement', '');
+      showToast('Announcement cleared');
+    }
+
+    function setPreset(text) {
+      document.getElementById('announceInput').value = text;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    document.getElementById('tokenInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') callToken();
+    });
+  </script>
+</body>
+</html>

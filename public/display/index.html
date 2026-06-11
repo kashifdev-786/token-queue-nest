@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Queue Display — Eye Hospital</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="/shared/hospital-theme.css" />
+  <style>
+    html, body {
+      overflow: hidden;
+      background: var(--navy);
+    }
+
+    .display {
+      display: grid;
+      grid-template-rows: auto 1fr auto auto;
+      height: 100vh;
+      background: linear-gradient(180deg, var(--navy) 0%, #061525 100%);
+    }
+
+    /* Header */
+    .display-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 24px;
+      padding: 20px 36px;
+      background: rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .brand-mark {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-mark svg { display: block; }
+
+    .brand-text h1 {
+      font-size: clamp(1.1rem, 2vw, 1.55rem);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .brand-text p {
+      margin-top: 4px;
+      font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .header-center {
+      text-align: center;
+    }
+
+    .header-center .queue-title {
+      font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .header-center .queue-sub {
+      margin-top: 4px;
+      font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .header-time {
+      text-align: right;
+      min-width: 180px;
+    }
+
+    .clock {
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
+
+    .date-line {
+      margin-top: 4px;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 8px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #81c784;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #66bb6a;
+      animation: livePulse 2s ease-in-out infinite;
+    }
+
+    .live-badge.offline { color: #ef9a9a; }
+    .live-badge.offline .live-dot { background: #e57373; animation: none; }
+
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    /* Room grid */
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      padding: 28px 36px;
+      min-height: 0;
+    }
+
+    .room-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 3px solid transparent;
+      transition: border-color 0.4s, transform 0.4s;
+    }
+
+    .room-card.active.r1 { border-color: var(--teal); }
+    .room-card.active.r2 { border-color: var(--blue); }
+
+    .room-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .room-card.r1 .room-card-header { background: var(--teal-light); }
+    .room-card.r2 .room-card-header { background: var(--blue-light); }
+
+    .room-id-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .room-number {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .room-card.r1 .room-number { background: var(--teal); }
+    .room-card.r2 .room-number { background: var(--blue); }
+
+    .room-name-en {
+      font-size: clamp(1rem, 1.8vw, 1.25rem);
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+    }
+
+    .room-name-ur {
+      font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .room-status-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--surface-muted);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .room-card.active .room-status-pill {
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .room-card.active.r1 .room-status-pill { background: var(--teal); }
+    .room-card.active.r2 .room-status-pill { background: var(--blue); }
+
+    .room-card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 28px 32px;
+      gap: 8px;
+      position: relative;
+    }
+
+    .serving-label {
+      font-size: clamp(0.75rem, 1.2vw, 0.88rem);
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .room-card.active .serving-label { color: var(--text-secondary); }
+
+    .token-display {
+      font-size: clamp(7rem, 16vw, 13rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 0.95;
+      color: #c5d0dc;
+      transition: color 0.35s, transform 0.35s;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .room-card.active.r1 .token-display { color: var(--teal); }
+    .room-card.active.r2 .token-display { color: var(--blue); }
+
+    .token-display.flash {
+      animation: tokenFlash 0.65s ease;
+    }
+
+    @keyframes tokenFlash {
+      0% { transform: scale(1); }
+      35% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    .proceed-label {
+      margin-top: 8px;
+      font-size: clamp(0.85rem, 1.4vw, 1rem);
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .room-card.active .proceed-label { color: var(--text-secondary); }
+
+    .room-card-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .room-card.active.r1 .room-card-glow {
+      opacity: 1;
+      background: radial-gradient(ellipse at center 70%, var(--teal-glow) 0%, transparent 65%);
+    }
+
+    .room-card.active.r2 .room-card-glow {
+      opacity: 1;
+      background: radial-gradient(ellipse at center 70%, var(--blue-glow) 0%, transparent 65%);
+    }
+
+    /* Announcement */
+    .announce-strip {
+      margin: 0 36px;
+      background: var(--gold-light);
+      border: 1px solid rgba(184, 134, 11, 0.35);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+      min-height: 58px;
+    }
+
+    .announce-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px;
+      background: rgba(184, 134, 11, 0.12);
+      border-right: 1px solid rgba(184, 134, 11, 0.25);
+      flex-shrink: 0;
+    }
+
+    .announce-label span {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+
+    .marquee-viewport {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .marquee-track {
+      display: flex;
+      white-space: nowrap;
+      will-change: transform;
+    }
+
+    .marquee-track.animate {
+      animation: marqueeScroll 22s linear infinite;
+    }
+
+    .marquee-track span {
+      padding: 0 48px;
+      font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .announce-empty {
+      padding: 0 24px;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    @keyframes marqueeScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Footer */
+    .display-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 14px 36px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .footer-msg {
+      font-size: clamp(0.78rem, 1.2vw, 0.92rem);
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .footer-msg strong {
+      color: rgba(255, 255, 255, 0.82);
+      font-weight: 600;
+    }
+
+    .footer-urdu {
+      text-align: right;
+      color: rgba(255, 255, 255, 0.65);
+      font-size: clamp(0.85rem, 1.3vw, 1rem);
+    }
+
+    .header-badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .audio-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .audio-badge::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .audio-badge.ready { color: #81c784; border-color: rgba(129, 199, 132, 0.35); background: rgba(129, 199, 132, 0.1); }
+    .audio-badge.muted { color: #ffb74d; border-color: rgba(255, 183, 77, 0.35); background: rgba(255, 183, 77, 0.1); }
+    .audio-badge.warn { color: #ffd54f; border-color: rgba(255, 213, 79, 0.35); background: rgba(255, 213, 79, 0.1); }
+    .audio-badge.error { color: #ef9a9a; border-color: rgba(239, 154, 154, 0.35); background: rgba(239, 154, 154, 0.1); cursor: default; }
+
+    .audio-unlock {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(6, 21, 37, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .audio-unlock[hidden] { display: none; }
+
+    .audio-unlock-card {
+      max-width: 520px;
+      width: 100%;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 40px 36px;
+      text-align: center;
+      border: 2px solid var(--teal);
+    }
+
+    .audio-unlock-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: var(--teal-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .audio-unlock-card h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 10px;
+    }
+
+    .audio-unlock-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .audio-unlock-card .urdu {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .audio-unlock-btn {
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 16px 32px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .audio-unlock-btn:hover { opacity: 0.92; }
+
+    .audio-unlock-note {
+      margin-top: 16px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="display">
+    <header class="display-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="13" stroke="#4db6ac" stroke-width="2"/>
+            <circle cx="16" cy="16" r="5" fill="#4db6ac"/>
+            <path d="M16 3v6M16 23v6M3 16h6M23 16h6" stroke="#4db6ac" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Al-Shifa Eye Hospital</h1>
+          <p class="urdu">الشفاء آئی ہسپتال</p>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="queue-title">Patient Queue Display</div>
+        <div class="queue-sub urdu">مریضوں کی قطار — براہ کرم اپنی باری کا انتظار کریں</div>
+      </div>
+
+      <div class="header-time">
+        <div class="clock" id="clock">--:--:--</div>
+        <div class="date-line" id="dateLine">—</div>
+        <div class="header-badges">
+          <div class="live-badge" id="liveBadge">
+            <span class="live-dot"></span>
+            <span id="liveText">Live</span>
+          </div>
+          <div class="audio-badge muted" id="audioStatus" title="Click to enable Urdu announcements">Audio off</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="rooms-grid">
+      <article class="room-card r1" id="card-room1">
+        <div class="room-card-header">
+          <div class="room-id-block">
+            <div class="room-number">1</div>
+            <div>
+              <div class="room-name-en">Preliminary Checkup</div>
+              <div class="room-name-ur urdu">ابتدائی معائنہ</div>
+            </div>
+          </div>
+          <div class="room-status-pill" id="status-room1">Waiting</div>
+        </div>
+        <div class="room-card-body">
+          <div class="room-card-glow"></div>
+          <div class="serving-label">Now Serving</div>
+          <div class="token-display" id="token-room1">—</div>
+          <div class="proceed-label">Please proceed to Room 1</div>
+          <div class="proceed-label urdu" id="urdu-room1">ٹوکن نمبر — کمرہ نمبر ایک میں آ جائیں</div>
+        </div>
+      </article>
+
+      <article class="room-card r2" id="card-room2">
+        <div class="room-card-header">
+          <div class="room-id-block">
+            <div class="room-number">2</div>
+            <div>
+              <div class="room-name-en">Doctor Consultation</div>
+              <div class="room-name-ur urdu">ڈاکٹر سے مشاورت</div>
+            </div>
+          </div>
+          <div class="room-status-pill" id="status-room2">Waiting</div>
+        </div>
+        <div class="room-card-body">
+          <div class="room-card-glow"></div>
+          <div class="serving-label">Now Serving</div>
+          <div class="token-display" id="token-room2">—</div>
+          <div class="proceed-label">Please proceed to Room 2</div>
+          <div class="proceed-label urdu" id="urdu-room2">ٹوکن نمبر — کمرہ نمبر دو میں آ جائیں</div>
+        </div>
+      </article>
+    </div>
+
+    <div class="announce-strip" id="announce-bar">
+      <div class="announce-label">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 10v4h4l5 4V6L8 10H4z" fill="#b8860b"/>
+          <path d="M16 8.5a5 5 0 010 7M18.5 6a8 8 0 010 12" stroke="#b8860b" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>Notice</span>
+      </div>
+      <div class="marquee-viewport">
+        <span class="announce-empty" id="announce-text">No announcements at this time</span>
+      </div>
+    </div>
+
+    <footer class="display-footer">
+      <div class="footer-msg">
+        <strong>Please remain seated</strong> until your token number is displayed and announced.
+      </div>
+      <div class="footer-msg footer-urdu urdu">
+        براہ کرم بیٹھے رہیں — جب تک آپ کا نمبر نہ بلایا جائے
+      </div>
+    </footer>
+  </div>
+
+  <div class="audio-unlock" id="audioUnlock">
+    <div class="audio-unlock-card">
+      <div class="audio-unlock-icon" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+          <path d="M4 10v4h4l5 4V6L8 10H4z" fill="#00796b"/>
+          <path d="M16 8.5a5 5 0 010 7M18.5 6a8 8 0 010 12" stroke="#00796b" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2>Enable Urdu Announcements</h2>
+      <p>Browsers require one click before the display can speak token numbers aloud.</p>
+      <p class="urdu">براہ کرم اعلانات کے لیے آڈیو فعال کریں — اردو آواز سنائی دے گی</p>
+      <button class="audio-unlock-btn" id="enableAudioBtn" type="button">Enable Audio</button>
+      <p class="audio-unlock-note">Server uses Microsoft Urdu voice. Mac running npm start needs internet once per announcement.</p>
+    </div>
+  </div>
+
+  <script src="/shared/token-announcer.js"></script>
+  <script>
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('dateLine').textContent =
+        now.toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    const socket = io();
+    let prevState = { room1: { current: null }, room2: { current: null } };
+
+    socket.on('connect', () => {
+      const badge = document.getElementById('liveBadge');
+      badge.classList.remove('offline');
+      document.getElementById('liveText').textContent = 'Live';
+    });
+
+    socket.on('disconnect', () => {
+      const badge = document.getElementById('liveBadge');
+      badge.classList.add('offline');
+      document.getElementById('liveText').textContent = 'Offline';
+    });
+
+    socket.on('state', (state) => {
+      updateRoom('room1', state.room1, prevState.room1);
+      updateRoom('room2', state.room2, prevState.room2);
+      updateAnnouncement(state.announcement);
+      prevState = JSON.parse(JSON.stringify(state));
+    });
+
+    function updateRoom(roomKey, roomData, prev) {
+      const tokenEl = document.getElementById(`token-${roomKey}`);
+      const cardEl = document.getElementById(`card-${roomKey}`);
+      const statusEl = document.getElementById(`status-${roomKey}`);
+      const token = roomData.current;
+
+      tokenEl.textContent = token !== null ? token : '—';
+
+      if (token !== null) {
+        cardEl.classList.add('active');
+        statusEl.textContent = 'Serving';
+        const urduEl = document.getElementById(`urdu-${roomKey}`);
+        if (urduEl && window.TokenAnnouncer) {
+          urduEl.textContent = TokenAnnouncer.buildAnnouncement(token, roomKey);
+        }
+        if (token !== prev.current) {
+          tokenEl.classList.remove('flash');
+          void tokenEl.offsetWidth;
+          tokenEl.classList.add('flash');
+          TokenAnnouncer.speak(token, roomKey);
+        }
+      } else {
+        cardEl.classList.remove('active');
+        statusEl.textContent = 'Waiting';
+        const urduEl = document.getElementById(`urdu-${roomKey}`);
+        if (urduEl) {
+          urduEl.textContent = roomKey === 'room1'
+            ? 'ٹوکن نمبر — کمرہ نمبر ایک میں آ جائیں'
+            : 'ٹوکن نمبر — کمرہ نمبر دو میں آ جائیں';
+        }
+      }
+    }
+
+    function updateAnnouncement(text) {
+      const viewport = document.querySelector('.marquee-viewport');
+      if (text && text.trim()) {
+        const needsScroll = text.length > 50;
+        viewport.innerHTML = needsScroll
+          ? `<div class="marquee-track animate"><span>${escapeHtml(text)}</span><span aria-hidden="true">${escapeHtml(text)}</span></div>`
+          : `<div class="marquee-track"><span>${escapeHtml(text)}</span></div>`;
+      } else {
+        viewport.innerHTML = '<span class="announce-empty" id="announce-text">No announcements at this time</span>';
+      }
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>
