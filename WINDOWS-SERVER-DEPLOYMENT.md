@@ -1,6 +1,29 @@
 # Zahid Clinic Token Queue — Windows Server Deployment Guide
 
-This product is designed to run on a **Windows Server** machine on your clinic LAN. The server hosts the queue app, staff panels, hall display, and Urdu voice announcements.
+Development happens on your **Mac**. Production runs on a **Windows Server** PC at the clinic. Clinic TVs and tablets connect over the LAN.
+
+This guide labels every step with the machine where it runs:
+
+| Label | Machine |
+|-------|---------|
+| **Mac** | Your development computer |
+| **Windows Server** | Clinic server PC (runs Node.js on port **3000**) |
+| **Clinic devices** | Hall TV, Room 1 tablet, Room 2 tablet (same LAN as server) |
+
+---
+
+## Deployment roadmap
+
+| Step | Machine | What you do |
+|------|---------|-------------|
+| 1 | Mac | Install Node.js; develop and test locally |
+| 2 | Mac | Prepare project files to copy to the server |
+| 3 | Windows Server | Install Node.js |
+| 4 | Windows Server | Copy project from Mac; `npm install`; `npm run build` |
+| 5 | Windows Server | Test run, open firewall, set static LAN IP |
+| 6 | Windows Server | Install PM2; auto-start on boot |
+| 7 | Clinic devices | Open display and staff panel URLs |
+| 8 | Mac → Windows Server | Repeat Steps 2 and 4–6 when you release updates |
 
 ---
 
@@ -13,13 +36,23 @@ This product is designed to run on a **Windows Server** machine on your clinic L
 | **Room 1 tablet/PC** | Opens `/room1` for consultation tokens |
 | **Room 2 tablet/PC** | Opens `/room2` for checkup tokens |
 
-All devices must be on the **same local network** as the server.
+All clinic devices must be on the **same local network** as the server.
 
 **Internet:** Required only for **Urdu voice announcements** (Microsoft Edge TTS). Token updates and the display work fully offline on the LAN.
 
 ---
 
 ## Requirements
+
+### Mac (development)
+
+| Item | Recommendation |
+|------|----------------|
+| OS | macOS (current version) |
+| Node.js | **v20 LTS** or **v22 LTS** ([https://nodejs.org](https://nodejs.org)) |
+| Git | Optional — for pulling updates on Mac before copying to server |
+
+### Windows Server (production)
 
 | Item | Recommendation |
 |------|----------------|
@@ -28,16 +61,134 @@ All devices must be on the **same local network** as the server.
 | Disk | 500 MB free for Node.js + app |
 | Node.js | **v20 LTS** or **v22 LTS** ([https://nodejs.org](https://nodejs.org)) |
 | Network | Static LAN IP for the server (example: `192.168.1.10`) |
+
+### Clinic devices
+
+| Item | Recommendation |
+|------|----------------|
 | Browsers | **Google Chrome** or **Microsoft Edge** on display and staff devices |
 
 ---
 
-## Step 1 — Install Node.js on Windows Server
+# Part A — Development on Mac
 
-1. Download the **LTS Windows Installer (.msi)** from [https://nodejs.org](https://nodejs.org).
+Run these steps on your **Mac** while building and testing the app.
+
+---
+
+## Step 1 — Install Node.js on Mac
+
+1. Download the **LTS macOS Installer (.pkg)** from [https://nodejs.org](https://nodejs.org).
+2. Run the installer and accept defaults.
+3. Open **Terminal** and verify:
+
+```bash
+node -v
+npm -v
+```
+
+You should see versions such as `v20.x.x` and `10.x.x`.
+
+---
+
+## Step 2 — Develop and test on Mac
+
+Clone or open the project on your Mac, then install dependencies and start the dev server:
+
+```bash
+cd ~/Backend/token-queue-nest   # adjust to your local path
+npm install
+npm start
+```
+
+Open in your Mac browser:
+
+| Test | URL |
+|------|-----|
+| Display page | `http://localhost:3000/display` |
+| Room 1 panel | `http://localhost:3000/room1` |
+| Room 2 panel | `http://localhost:3000/room2` |
+| Urdu TTS sample | `http://localhost:3000/api/tts?token=1&room=room1` |
+
+Stop the dev server with **Ctrl+C** when finished testing.
+
+> **Note:** Urdu TTS on Mac also needs internet access, same as on Windows Server.
+
+---
+
+## Step 3 — Verify production build on Mac (optional)
+
+Before copying to the server, confirm the project builds cleanly on your Mac:
+
+```bash
+cd ~/Backend/token-queue-nest
+npm run build
+ls dist/main.js
+```
+
+This is a sanity check only. The **production build that actually runs in the clinic must be built again on Windows Server** (Step 6).
+
+---
+
+## Step 4 — Prepare files to copy to Windows Server
+
+On your **Mac**, gather the project folder to transfer to the clinic server.
+
+### What to include
+
+Copy the full project **except** `node_modules`, `dist`, and `.env` files:
+
+```
+token-queue-nest\
+  package.json
+  package-lock.json
+  tsconfig.json
+  ecosystem.config.cjs
+  src\
+  public\
+```
+
+`ecosystem.config.cjs` is included in the repo — PM2 uses it on the server.
+
+### What NOT to copy
+
+| Exclude | Reason |
+|---------|--------|
+| `node_modules\` | Built for your Mac — reinstall on Windows with `npm install` |
+| `dist\` | Rebuild on Windows with `npm run build` |
+| `.env` | Not used by this app; avoid copying secrets by habit |
+
+### How to transfer Mac → Windows Server
+
+Use any method that works on your clinic network:
+
+| Method | Notes |
+|--------|-------|
+| USB drive | Copy the folder to `C:\Apps\token-queue-nest` on the server |
+| LAN file share | Share a folder from Mac or copy via Windows shared folder |
+| Remote Desktop | Copy/paste or map a network drive while logged into the server |
+| Git | `git clone` or `git pull` directly on Windows Server if Git is installed there |
+
+Target path on Windows Server:
+
+```
+C:\Apps\token-queue-nest
+```
+
+---
+
+# Part B — Windows Server setup (first-time)
+
+Run these steps on the **Windows Server** at the clinic. You need physical or Remote Desktop access to this machine.
+
+---
+
+## Step 5 — Install Node.js on Windows Server
+
+1. On the **Windows Server**, download the **LTS Windows Installer (.msi)** from [https://nodejs.org](https://nodejs.org).
 2. Run the installer as Administrator.
 3. Accept defaults; ensure **“Add to PATH”** is checked.
-4. Open **PowerShell** or **Command Prompt** and verify:
+4. Open **PowerShell** and verify:
 
 ```powershell
 node -v
@@ -48,62 +199,29 @@ You should see versions such as `v20.x.x` and `10.x.x`.
 
 ---
 
-## Step 2 — Copy the application to the server
+## Step 6 — Install dependencies and build on Windows Server
 
-1. Copy the full project folder to the server, for example:
-
-```
-C:\Apps\token-queue-nest
-```
-
-2. The folder must contain at least:
-
-```
-token-queue-nest\
-  package.json
-  package-lock.json
-  tsconfig.json
-  src\
-  public\
-```
-
-Do **not** copy `node_modules` from another machine unless it was installed on the same Windows OS. Prefer running `npm install` on the server.
-
----
-
-## Step 3 — Install dependencies
-
-Open **PowerShell as Administrator** (or a user with write access to the app folder):
+Open **PowerShell** on the **Windows Server** (Administrator not required unless folder permissions block writes):
 
 ```powershell
 cd C:\Apps\token-queue-nest
 npm install
-```
-
-Wait until it finishes with no errors.
-
----
-
-## Step 4 — Build for production
-
-```powershell
-cd C:\Apps\token-queue-nest
 npm run build
 ```
 
-This compiles TypeScript into the `dist\` folder.
-
-Verify:
+Verify the build output:
 
 ```powershell
 dir dist\main.js
 ```
 
+> **Important:** Always run `npm install` and `npm run build` on the **Windows Server**, even if you already built on Mac. Do not copy `node_modules` or `dist` from your Mac.
+
 ---
 
-## Step 5 — Test run (manual)
+## Step 7 — Test run on Windows Server (manual)
 
-Start the server once to confirm it works:
+On the **Windows Server**, start the app once to confirm it works before setting up PM2:
 
 ```powershell
 cd C:\Apps\token-queue-nest
@@ -122,7 +240,9 @@ You should see output similar to:
 
 Note the **Display / Room URLs** and your server LAN IP.
 
-### Quick checks on the server
+### Quick checks on Windows Server
+
+Open these in a browser **on the Windows Server**:
 
 | Test | URL |
 |------|-----|
@@ -131,17 +251,17 @@ Note the **Display / Room URLs** and your server LAN IP.
 | Room 2 panel | `http://localhost:3000/room2` |
 | Urdu TTS sample | `http://localhost:3000/api/tts?token=1&room=room1` |
 
-Stop the test with **Ctrl+C** before setting up PM2 (Step 7).
+Stop the test with **Ctrl+C** before setting up PM2 (Step 9).
 
 ---
 
-## Step 6 — Open Windows Firewall (port 3000)
+## Step 8 — Open Windows Firewall and set LAN IP
 
-Other PCs and tablets on the LAN must reach port **3000**.
+On the **Windows Server**, allow other clinic PCs and tablets to reach port **3000**.
 
-### Option A — PowerShell (recommended)
+### 8.1 Firewall rule (PowerShell — recommended)
 
-Run **PowerShell as Administrator**:
+Run **PowerShell as Administrator** on the **Windows Server**:
 
 ```powershell
 New-NetFirewallRule `
@@ -155,7 +275,9 @@ New-NetFirewallRule `
 
 Use `-Profile Domain,Private,Public` only if you understand the security impact on public networks. For a clinic LAN, **Private** is usually enough.
 
-### Option B — Windows Defender Firewall GUI
+### 8.2 Firewall rule (GUI alternative)
+
+On the **Windows Server**:
 
 1. Open **Windows Defender Firewall with Advanced Security**.
 2. **Inbound Rules** → **New Rule…**
@@ -163,7 +285,9 @@ Use `-Profile Domain,Private,Public` only if you understand the security impact 
 4. **Allow the connection**
 5. Name: `Zahid Clinic Token Queue`
 
-### Find the server LAN IP
+### 8.3 Find and fix the server LAN IP
+
+On the **Windows Server**:
 
 ```powershell
 ipconfig
@@ -171,70 +295,50 @@ ipconfig
 
 Look for **IPv4 Address** on the active Ethernet/Wi‑Fi adapter (example: `192.168.1.10`).
 
-Assign a **static IP** or DHCP reservation so this address does not change after reboot.
+Assign a **static IP** or DHCP reservation so this address does not change after reboot. Use this IP as `SERVER_IP` in all clinic device URLs.
 
 ---
 
-## Step 7 — Run with PM2 (auto-start on boot)
+## Step 9 — Run with PM2 on Windows Server (auto-start on boot)
 
-The app must stay running 24/7. Use **PM2** to manage the Node.js process, restart it on crash, and restore it after reboot.
+On the **Windows Server**, use **PM2** to keep the app running 24/7, restart it on crash, and restore it after reboot.
 
-### 7.1 Install PM2 globally
+### 9.1 Install PM2 globally
 
-Open **PowerShell as Administrator**:
+Run **PowerShell as Administrator** on the **Windows Server**:
 
 ```powershell
 npm install -g pm2
 pm2 -v
 ```
 
-### 7.2 Create a PM2 ecosystem file (recommended)
+### 9.2 Create logs folder
 
-In `C:\Apps\token-queue-nest`, create `ecosystem.config.cjs`:
-
-```javascript
-module.exports = {
-  apps: [
-    {
-      name: 'TokenQueue',
-      script: 'dist/main.js',
-      cwd: 'C:\\Apps\\token-queue-nest',
-      instances: 1,
-      autorestart: true,
-      max_restarts: 10,
-      restart_delay: 3000,
-      error_file: 'logs/pm2-error.log',
-      out_file: 'logs/pm2-out.log',
-      merge_logs: true,
-      time: true,
-    },
-  ],
-};
-```
-
-Create the logs folder:
+On the **Windows Server**:
 
 ```powershell
 mkdir C:\Apps\token-queue-nest\logs
 ```
 
-Adjust `cwd` if the app is installed elsewhere.
+The project already includes `ecosystem.config.cjs` at the app root. If you installed the app elsewhere, edit `cwd` inside that file to match your path.
 
-### 7.3 Start the app with PM2
+### 9.3 Start the app with PM2
+
+On the **Windows Server**:
 
 ```powershell
 cd C:\Apps\token-queue-nest
 pm2 start ecosystem.config.cjs
 ```
 
-Or without an ecosystem file:
+Or without the ecosystem file:
 
 ```powershell
 cd C:\Apps\token-queue-nest
 pm2 start dist/main.js --name TokenQueue
 ```
 
-Verify:
+Verify on the **Windows Server**:
 
 ```powershell
 pm2 status
@@ -243,44 +347,52 @@ pm2 logs TokenQueue --lines 20
 
 You should see `TokenQueue` with status **online**.
 
-### 7.4 Save the process list
+### 9.4 Save the process list
 
-PM2 must remember this app so it can restore it after reboot:
+On the **Windows Server**:
 
 ```powershell
 pm2 save
 ```
 
-### 7.5 Auto-start PM2 on Windows boot
+PM2 must remember this app so it can restore it after reboot.
 
-PM2 has no built-in Windows startup command. Use one of the options below.
+### 9.5 Auto-start PM2 on Windows boot
+
+PM2 has no built-in Windows startup command. On the **Windows Server**, use one of the options below.
 
 #### Option A — Clinic PC with auto-login (simplest)
 
 Best when the server is a dedicated clinic PC that signs in automatically after boot.
+
+On the **Windows Server**:
 
 ```powershell
 npm install -g pm2-windows-startup
 pm2-startup install
 ```
 
-Reboot once, then confirm the app is already running **before** anyone logs in (if possible) or immediately after auto-login:
+Reboot the **Windows Server** once, then sign in (or wait for auto-login) and confirm:
 
 ```powershell
 pm2 status
 ```
 
-> **Note:** `pm2-windows-startup` hooks into the user login session. Enable **Windows auto-login** for the account that runs PM2, or the app will not start until someone signs in.
+`TokenQueue` should be **online**.
+
+> **Note:** `pm2-windows-startup` starts PM2 when a user logs in. Enable **Windows auto-login** for the account that runs PM2, or the app will not start until someone signs in.
 
 #### Option B — Headless Windows Server (Windows Service)
 
 Use when the server must run **without** an interactive user login (typical Windows Server).
 
+On the **Windows Server**:
+
 ```powershell
 npm install -g pm2-windows-service
 ```
 
-Run the installer **as Administrator**:
+Run the installer **as Administrator** on the **Windows Server**:
 
 ```powershell
 pm2-service-install -n PM2
@@ -295,7 +407,7 @@ When prompted:
 | Set PM2_SERVICE_SCRIPTS? | **No** (uses `dump.pm2` from `pm2 save`) |
 | Set PM2_SERVICE_PM2_DIR? | **Yes** — path to global PM2, e.g. `C:\Users\Administrator\AppData\Roaming\npm\node_modules\pm2` |
 
-Find your global PM2 path:
+Find your global PM2 path on the **Windows Server**:
 
 ```powershell
 npm root -g
@@ -305,9 +417,13 @@ The PM2 dir is `<npm-root>\pm2` (not `pm2\index.js`).
 
 After install, confirm a **PM2** service exists in **Services** (`services.msc`) with start type **Automatic**.
 
-Reboot and run `pm2 status` — `TokenQueue` should show uptime from boot, not from your login.
+Reboot the **Windows Server** and run `pm2 status` — `TokenQueue` should show uptime from boot.
 
-### 7.6 PM2 daily commands
+> **Note:** `pm2-windows-service` is an older community package. It still works on many Windows Server installs, but if the installer fails on newer Windows versions, use Option A with auto-login instead.
+
+### 9.6 PM2 daily commands (Windows Server)
+
+Run these on the **Windows Server**:
 
 ```powershell
 pm2 status
@@ -319,13 +435,13 @@ pm2 delete TokenQueue
 pm2 save
 ```
 
-To remove PM2 from Windows startup (Option A):
+To remove PM2 from Windows startup (Option A), on the **Windows Server**:
 
 ```powershell
 pm2-startup uninstall
 ```
 
-To remove the PM2 Windows service (Option B):
+To remove the PM2 Windows service (Option B), on the **Windows Server**:
 
 ```powershell
 pm2-service-uninstall
@@ -333,9 +449,15 @@ pm2-service-uninstall
 
 ---
 
-## Step 8 — Configure client devices (clinic LAN)
+# Part C — Clinic LAN devices
 
-Replace `SERVER_IP` with your server’s LAN IP (example: `192.168.1.10`).
+Run these steps on the **hall TV** and **staff tablets** — not on your Mac or necessarily on the Windows Server console.
+
+Replace `SERVER_IP` with the Windows Server LAN IP from Step 8.3 (example: `192.168.1.10`).
+
+---
+
+## Step 10 — Configure clinic devices
 
 | Device | URL | Notes |
 |--------|-----|--------|
@@ -343,30 +465,49 @@ Replace `SERVER_IP` with your server’s LAN IP (example: `192.168.1.10`).
 | **Room 1 staff** | `http://SERVER_IP:3000/room1` | Tablet or PC at consultation desk |
 | **Room 2 staff** | `http://SERVER_IP:3000/room2` | Tablet or PC at checkup desk |
 
-### Display TV setup
+### Hall display (TV) setup
+
+On the **hall TV** or PC connected to the projector:
 
 1. Open Chrome or Edge.
 2. Go to `http://SERVER_IP:3000/display`
-3. Click **Enable Speaker** once (browser policy).
-4. Press **F11** for fullscreen.
-5. Optional: set browser to **Open at startup** / kiosk mode so the display survives reboot.
+3. Confirm the badge shows **Speaker on** (speaker is on by default).
+4. **Tap the screen once** if the badge says **Tap screen once to play** — browsers require one user interaction before audio.
+5. Press **F11** for fullscreen (or use the fullscreen button in the page header).
+6. Optional: set the browser to **Open at startup** / kiosk mode so the display survives reboot.
 
 ### Staff panels
 
-Bookmark Room 1 and Room 2 URLs on each tablet. No speaker enable is required on staff devices unless you test audio there.
+On each **Room 1** and **Room 2** tablet:
+
+1. Open the room URL in Chrome or Edge.
+2. Bookmark the page for daily use.
+
+Staff panels do not need speaker setup unless you are testing audio there.
 
 ---
 
-## Step 9 — Daily operation
+# Part D — Daily operation
 
-1. PM2 process **TokenQueue** should be **online** (automatic after Step 7).
-2. Display page shows **Live** when connected.
-3. Staff enter token number in Room 1 or Room 2 panel and click **Call Token**.
-4. Display updates instantly; Urdu announcement plays if speaker is enabled on the display.
+| What | Where | Expected state |
+|------|-------|----------------|
+| Queue server | **Windows Server** | PM2 process `TokenQueue` is **online** |
+| Hall display | **Clinic TV** | Page shows **Live** when connected |
+| Token calls | **Staff tablets** | Staff enter token number and click **Call Token** |
+| Urdu voice | **Hall display** | Plays when speaker is not muted and server has internet |
 
 ---
 
-## Updating the app after code changes
+# Part E — Updating after code changes
+
+When you change code on your **Mac**, deploy the update to the **Windows Server** and refresh clinic browsers.
+
+### On Mac
+
+1. Finish development and test locally (`npm start`).
+2. Prepare updated files using Step 4 (copy to USB, share, or push to Git).
+
+### On Windows Server
 
 1. Stop the app:
 
@@ -374,9 +515,9 @@ Bookmark Room 1 and Room 2 URLs on each tablet. No speaker enable is required on
 pm2 stop TokenQueue
 ```
 
-2. Replace updated files (or `git pull`) in `C:\Apps\token-queue-nest`
+2. Replace updated files in `C:\Apps\token-queue-nest` (USB copy, file share, or `git pull`).
 
-3. Reinstall/build if `package.json` changed:
+3. Reinstall and rebuild (always rebuild after any `src\` or `public\` change; run `npm install` only if `package.json` changed):
 
 ```powershell
 cd C:\Apps\token-queue-nest
@@ -391,34 +532,38 @@ pm2 restart TokenQueue
 pm2 save
 ```
 
-5. Hard-refresh browsers on display and staff devices (**Ctrl+F5**).
+### On clinic devices
+
+5. Hard-refresh browsers on the display and staff tablets (**Ctrl+F5**).
 
 ---
 
 ## Troubleshooting
 
-| Problem | What to check |
-|---------|----------------|
-| Cannot open URLs from other PCs | Firewall rule for port 3000; server and clients on same subnet |
-| Page loads but tokens don’t update | `pm2 status` — is TokenQueue **online**? Check `logs\pm2-error.log`; refresh browser |
-| No Urdu voice | Click **Enable Speaker** on display; server needs **internet** for TTS |
-| “Check server internet” on display | Outbound HTTPS from server (Edge TTS); try opening TTS URL in browser on server |
-| Wrong IP after reboot | Set static IP or DHCP reservation on server |
-| PM2 app won’t start | Run `node dist\main.js` manually; then `pm2 logs TokenQueue --err --lines 50` |
-| PM2 not running after reboot | Re-run Step 7.5; confirm `pm2 save` was run; check PM2 Windows service or auto-login |
-| Port 3000 in use | `netstat -ano \| findstr :3000` — stop conflicting app or change port in `src\main.ts` and rebuild |
+| Problem | Machine | What to check |
+|---------|---------|----------------|
+| Build fails on Mac | **Mac** | `npm install`; read TypeScript errors in Terminal |
+| Build fails on server | **Windows Server** | Run `npm run build` manually; do not use Mac `dist\` |
+| Cannot open URLs from other PCs | **Windows Server** | Firewall rule for port 3000; server and clients on same subnet |
+| Page loads but tokens don’t update | **Windows Server** | `pm2 status` — is TokenQueue **online**? Check `logs\pm2-error.log` |
+| No Urdu voice | **Windows Server** + **display** | Server needs **internet** for TTS; display speaker not muted; tap screen once if needed |
+| “TTS unavailable” on display | **Windows Server** | Outbound HTTPS for Edge TTS; open TTS URL in server browser |
+| Wrong IP after reboot | **Windows Server** | Set static IP or DHCP reservation |
+| PM2 app won’t start | **Windows Server** | Run `node dist\main.js` manually; then `pm2 logs TokenQueue --err --lines 50` |
+| PM2 not running after reboot | **Windows Server** | Re-run Step 9.5; confirm `pm2 save`; check auto-login or PM2 service |
+| Port 3000 in use | **Windows Server** | `netstat -ano \| findstr :3000` — stop conflicting app or change port in `src\main.ts`, rebuild on server |
 
-### Test TTS from the server browser
+### Test TTS from Windows Server browser
 
-Open:
+On the **Windows Server**, open:
 
 ```
 http://localhost:3000/api/tts?token=5&room=room1
 ```
 
-An MP3 download or playback means TTS is working.
+Audio playback or download means TTS is working.
 
-### View PM2 logs
+### View PM2 logs on Windows Server
 
 ```powershell
 pm2 logs TokenQueue --lines 50
@@ -435,18 +580,25 @@ Get-Content C:\Apps\token-queue-nest\logs\pm2-error.log -Tail 50
 
 ---
 
-## Quick reference — production commands
+## Quick reference by machine
+
+### Mac (development)
+
+```bash
+cd ~/Backend/token-queue-nest
+npm install
+npm start              # dev server
+npm run build          # optional sanity check before deploy
+```
+
+### Windows Server (production)
 
 ```powershell
-# Install & build (first time or after update)
 cd C:\Apps\token-queue-nest
 npm install
 npm run build
+npm run start:prod     # manual test only
 
-# Manual run (testing only)
-npm run start:prod
-
-# PM2 (after Step 7 setup)
 pm2 start ecosystem.config.cjs
 pm2 status
 pm2 restart TokenQueue
@@ -454,16 +606,37 @@ pm2 logs TokenQueue
 pm2 save
 ```
 
+### Clinic devices
+
+```
+http://SERVER_IP:3000/display
+http://SERVER_IP:3000/room1
+http://SERVER_IP:3000/room2
+```
+
 ---
 
 ## Support checklist before go-live
 
+### Mac
+
+- [ ] Node.js installed; `npm start` works locally
+- [ ] Optional: `npm run build` succeeds on Mac
+
+### Windows Server
+
 - [ ] Node.js installed and in PATH
-- [ ] `npm install` and `npm run build` completed without errors
+- [ ] Project copied from Mac (without `node_modules` or `dist`)
+- [ ] `npm install` and `npm run build` completed without errors on Windows
 - [ ] Windows Firewall allows inbound TCP 3000 on LAN
 - [ ] Server has stable LAN IP
-- [ ] PM2 installed; `TokenQueue` process saved and auto-start configured (Step 7.5)
-- [ ] Display opens `/display` and shows **Live**
-- [ ] Speaker enabled once on display; sample Urdu plays from speaker icon
-- [ ] Room 1 and Room 2 panels call tokens successfully
+- [ ] PM2 installed; `TokenQueue` process saved and auto-start configured (Step 9.5)
+- [ ] TTS sample URL plays or downloads from server browser
 - [ ] Server has internet access for Urdu announcements
+
+### Clinic devices
+
+- [ ] Display opens `/display` and shows **Live**
+- [ ] Display speaker not muted; one screen tap done if browser required it
+- [ ] Sample Urdu announcement plays on token call
+- [ ] Room 1 and Room 2 panels call tokens successfully

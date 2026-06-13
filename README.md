@@ -18,7 +18,7 @@ npm install
 npm start
 ```
 
-Production on Windows Server uses `npm run build` and `npm run start:prod` — details are in [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md).
+Production runs on **Windows Server** at the clinic (develop on Mac, deploy to Windows). See [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md) for the full Mac → Windows step-by-step guide.
 
 ---
 
@@ -46,7 +46,7 @@ Replace `SERVER_IP` with your Windows Server LAN address (example: `192.168.1.10
 
 ## Client browsers
 
-- **Display TV:** Chrome or Edge, fullscreen (F11), enable speaker once
+- **Display TV:** Chrome or Edge, fullscreen (F11); speaker on by default — tap screen once if browser blocks audio
 - **Staff tablets:** Chrome or Edge; bookmark Room 1 / Room 2 URLs
 
 ---
