@@ -3,11 +3,18 @@
  * Speaker is ON by default; user mutes with one button. Preference persists in localStorage.
  */
 (function (global) {
-  const URDU_ONES = [
+  const URDU_NUMBERS = [
     'صفر', 'ایک', 'دو', 'تین', 'چار', 'پانچ', 'چھ', 'سات', 'آٹھ', 'نو', 'دس',
-    'گیارہ', 'بارہ', 'تیرہ', 'چودہ', 'پندرہ', 'سولہ', 'سترہ', 'اٹھارہ', 'انیس',
+    'گیارہ', 'بارہ', 'تیرہ', 'چودہ', 'پندرہ', 'سولہ', 'سترہ', 'اٹھارہ', 'انیس', 'بیس',
+    'اکیس', 'بائیس', 'تئیس', 'چوبیس', 'پچیس', 'چھبیس', 'ستائیس', 'اٹھائیس', 'انتیس', 'تیس',
+    'اکتیس', 'بتیس', 'تینتیس', 'چونتیس', 'پینتیس', 'چھتیس', 'سینتیس', 'اڑتیس', 'انتالیس', 'چالیس',
+    'اکتالیس', 'بیالیس', 'تینتالیس', 'چوالیس', 'پینتالیس', 'چھیالیس', 'سینتالیس', 'اڑتالیس', 'انچاس', 'پچاس',
+    'اکاون', 'باون', 'ترپن', 'چون', 'پچپن', 'چھپن', 'ستاون', 'اٹھاون', 'انسٹھ', 'ساٹھ',
+    'اکسٹھ', 'باسٹھ', 'تریسٹھ', 'چونسٹھ', 'پینسٹھ', 'چھاسٹھ', 'سڑسٹھ', 'اڑسٹھ', 'انہتر', 'ستر',
+    'اکہتر', 'بہتر', 'تہتر', 'چوہتر', 'پچھتر', 'چھہتر', 'ستتر', 'اٹھتر', 'اناسی', 'اسی',
+    'اکاسی', 'بیاسی', 'تراسی', 'چوراسی', 'پچاسی', 'چھیاسی', 'ستاسی', 'اٹاسی', 'نواسی', 'نوے',
+    'اکانوے', 'بانوے', 'ترانوے', 'چورانوے', 'پچانوے', 'چھیانوے', 'ستانوے', 'اٹھانوے', 'ننانوے',
   ];
-  const URDU_TENS = ['', '', 'بیس', 'تیس', 'چالیس', 'پچاس', 'ساٹھ', 'ستر', 'اسی', 'نوے'];
   const ROOM_PHRASES = {
     room1: 'کمرہ نمبر ایک',
     room2: 'کمرہ نمبر دو',
@@ -48,16 +55,11 @@
     const n = parseInt(tokenNumber, 10);
     if (Number.isNaN(n) || n < 0) return String(tokenNumber);
     if (n === MAX_TOKEN_NUMBER) return 'ایک ہزار';
-    if (n < 20) return URDU_ONES[n];
-    if (n < 100) {
-      const t = Math.floor(n / 10);
-      const o = n % 10;
-      return o ? `${URDU_TENS[t]} ${URDU_ONES[o]}` : URDU_TENS[t];
-    }
+    if (n < 100) return URDU_NUMBERS[n];
     if (n < MAX_TOKEN_NUMBER) {
       const hundreds = Math.floor(n / 100);
       const rest = n % 100;
-      const hundredPart = hundreds === 1 ? 'سو' : `${URDU_ONES[hundreds]} سو`;
+      const hundredPart = hundreds === 1 ? 'سو' : `${URDU_NUMBERS[hundreds]} سو`;
       if (!rest) return hundredPart;
       return `${hundredPart} ${tokenToUrduNumber(rest)}`;
     }

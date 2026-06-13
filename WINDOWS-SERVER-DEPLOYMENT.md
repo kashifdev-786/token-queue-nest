@@ -255,9 +255,11 @@ Stop the test with **Ctrl+C** before setting up PM2 (Step 9).
 
 ---
 
-## Step 8 — Open Windows Firewall and set LAN IP
+## Step 8 — Open Windows Firewall and set static LAN IP
 
-On the **Windows Server**, allow other clinic PCs and tablets to reach port **4789**.
+On the **Windows Server**, open port **4789** for clinic devices, then assign a **fixed LAN IP** so display and staff URLs never break after reboot.
+
+---
 
 ### 8.1 Firewall rule (PowerShell — recommended)
 
@@ -285,19 +287,266 @@ On the **Windows Server**:
 4. **Allow the connection**
 5. Name: `Zahid Clinic Token Queue`
 
-### 8.3 Find and fix the server LAN IP
+---
 
-On the **Windows Server**:
+### 8.3 Record current network settings (do this first)
+
+Before changing anything, collect the server’s existing network details on the **Windows Server**.
+
+#### 8.3.1 Open PowerShell
+
+On the **Windows Server**, open **PowerShell** (Administrator not required for `ipconfig`).
+
+#### 8.3.2 Run ipconfig
 
 ```powershell
 ipconfig
 ```
 
-Look for **IPv4 Address** on the active Ethernet/Wi‑Fi adapter (example: `192.168.1.10`).
+Find the adapter the clinic server actually uses:
 
-Assign a **static IP** or DHCP reservation so this address does not change after reboot. Use this IP as `SERVER_IP` in all clinic device URLs.
+| Clinic setup | Adapter name in `ipconfig` |
+|--------------|----------------------------|
+| Server plugged into wall/network port | **Ethernet** |
+| Server on Wi‑Fi (not recommended for production) | **Wi-Fi** |
+
+Write down these values from that adapter’s section:
+
+| Setting | Example | Your value |
+|---------|---------|------------|
+| **IPv4 Address** | `192.168.1.45` | __________ |
+| **Subnet Mask** | `255.255.255.0` | __________ |
+| **Default Gateway** | `192.168.1.1` | __________ |
+
+#### 8.3.3 Record DNS servers
+
+In the same `ipconfig` output, note **DNS Servers** (if shown). If not listed, your gateway is usually the DNS server.
+
+```powershell
+ipconfig /all
+```
+
+Look for **DNS Servers** under the same adapter. Example: `192.168.1.1` or `8.8.8.8`.
+
+| Setting | Example | Your value |
+|---------|---------|------------|
+| **DNS server 1** | `192.168.1.1` | __________ |
+| **DNS server 2** (optional) | `8.8.8.8` | __________ |
+
+#### 8.3.4 Choose the static IP address
+
+Pick an address on the **same subnet** as the gateway that is **not** already used by another device.
+
+| Rule | Example |
+|------|---------|
+| Same first three numbers as gateway | Gateway `192.168.1.1` → use `192.168.1.x` |
+| Avoid router DHCP range if possible | If DHCP is `.100`–`.200`, pick `.10` or `.210` |
+| Recommended for this server | `192.168.1.10` (easy to remember) |
+
+**Your chosen static IP (`SERVER_IP`):** __________
+
+> **Tip:** If the server already has a working DHCP address (e.g. `192.168.1.45`), you can keep that exact address as the static IP — just make sure nothing else will claim it after reboot (Step 8.4 Option A or B).
 
 ---
+
+### 8.4 Set a static LAN IP
+
+Use **one** of the two options below on the **Windows Server** (or clinic router). **Option A** is preferred when you have access to the clinic router.
+
+#### Option A — DHCP reservation on the clinic router (recommended)
+
+The router always assigns the same IP to the server by MAC address. Windows can stay on automatic (DHCP) — simpler and fewer mistakes.
+
+**On the Windows Server** — get the MAC address:
+
+```powershell
+getmac /v /fo list
+```
+
+Find the **Physical Address** for the active **Ethernet** (or Wi‑Fi) adapter. Example: `AA-BB-CC-DD-EE-FF`.
+
+**On the clinic router** (any PC browser on the LAN):
+
+1. Open the router admin page (common addresses: `192.168.1.1`, `192.168.0.1`, or `192.168.100.1` — use your **Default Gateway** from Step 8.3).
+2. Sign in (clinic IT or ISP sticker on the router).
+3. Find a menu named **DHCP Reservation**, **Address Reservation**, **Static DHCP**, or **LAN → DHCP Server**.
+4. Add a new reservation:
+   - **MAC address:** from `getmac` above
+   - **Reserved IP:** your chosen `SERVER_IP` (e.g. `192.168.1.10`)
+   - **Enable / Save**
+5. Save and apply router settings.
+
+**Back on the Windows Server** — refresh the lease:
+
+```powershell
+ipconfig /release
+ipconfig /renew
+ipconfig
+```
+
+Confirm **IPv4 Address** matches your reserved `SERVER_IP`.
+
+If the address does not update, on the **Windows Server**:
+
+```powershell
+# Run in PowerShell as Administrator
+Restart-NetAdapter -Name "Ethernet"
+```
+
+Replace `"Ethernet"` with your adapter name from `ipconfig` if different. Then run `ipconfig` again.
+
+---
+
+#### Option B — Static IP configured on Windows Server
+
+Use when you **cannot** access the router. Set the IP directly on the **Windows Server**.
+
+##### B.1 — Settings app (Windows Server 2022 / Windows 10 / 11)
+
+On the **Windows Server**:
+
+1. Press **Win + I** to open **Settings**.
+2. Go to **Network & Internet** → **Ethernet** (or **Wi-Fi** if that is what you use).
+3. Click the active network connection name.
+4. Next to **IP assignment**, click **Edit**.
+5. Change **Automatic (DHCP)** to **Manual**.
+6. Turn **IPv4** **On** and enter:
+
+| Field | Value |
+|-------|-------|
+| **IP address** | Your `SERVER_IP` (e.g. `192.168.1.10`) |
+| **Subnet mask** | From Step 8.3 (usually `255.255.255.0`) |
+| **Gateway** | From Step 8.3 (e.g. `192.168.1.1`) |
+| **Preferred DNS** | From Step 8.3 (e.g. `192.168.1.1` or `8.8.8.8`) |
+| **Alternate DNS** | Optional second DNS (e.g. `8.8.4.4`) |
+
+7. Click **Save**.
+
+##### B.2 — Classic control panel (alternative GUI)
+
+On the **Windows Server**:
+
+1. Press **Win + R**, type `ncpa.cpl`, press **Enter**.
+2. Right-click the active adapter (**Ethernet**) → **Properties**.
+3. Select **Internet Protocol Version 4 (TCP/IPv4)** → **Properties**.
+4. Select **Use the following IP address** and enter:
+
+| Field | Value |
+|-------|-------|
+| **IP address** | Your `SERVER_IP` (e.g. `192.168.1.10`) |
+| **Subnet mask** | `255.255.255.0` (or value from Step 8.3) |
+| **Default gateway** | e.g. `192.168.1.1` |
+
+5. Select **Use the following DNS server addresses**:
+
+| Field | Value |
+|-------|-------|
+| **Preferred DNS server** | e.g. `192.168.1.1` |
+| **Alternate DNS server** | optional, e.g. `8.8.8.8` |
+
+6. Click **OK** → **Close**.
+
+##### B.3 — PowerShell (advanced)
+
+On the **Windows Server**, run **PowerShell as Administrator**. Replace placeholders with your values from Step 8.3:
+
+```powershell
+# List adapters to find the exact InterfaceAlias (e.g. "Ethernet")
+Get-NetAdapter | Format-Table Name, Status, MacAddress
+
+# Set static IP — edit InterfaceAlias, IPAddress, DefaultGateway, PrefixLength
+New-NetIPAddress `
+  -InterfaceAlias "Ethernet" `
+  -IPAddress "192.168.1.10" `
+  -PrefixLength 24 `
+  -DefaultGateway "192.168.1.1"
+
+# Set DNS — edit InterfaceAlias and ServerAddresses
+Set-DnsClientServerAddress `
+  -InterfaceAlias "Ethernet" `
+  -ServerAddresses ("192.168.1.1", "8.8.8.8")
+```
+
+| `PrefixLength` | Subnet mask |
+|----------------|-------------|
+| `24` | `255.255.255.0` (most home/clinic LANs) |
+| `16` | `255.255.0.0` |
+
+If you get “address already exists”, the adapter may still have a DHCP address. Remove it first (same admin PowerShell):
+
+```powershell
+Remove-NetIPAddress -InterfaceAlias "Ethernet" -Confirm:$false
+Remove-NetRoute -InterfaceAlias "Ethernet" -Confirm:$false
+```
+
+Then run the `New-NetIPAddress` and `Set-DnsClientServerAddress` commands again.
+
+---
+
+### 8.5 Verify static IP and LAN access
+
+Run these checks on the **Windows Server** after Step 8.4.
+
+#### 8.5.1 Confirm IP address
+
+```powershell
+ipconfig
+```
+
+**IPv4 Address** must match your chosen `SERVER_IP` (e.g. `192.168.1.10`).
+
+#### 8.5.2 Ping the gateway
+
+```powershell
+ping 192.168.1.1
+```
+
+Replace with your gateway. You should see replies. If ping fails, recheck gateway and subnet mask in Step 8.4.
+
+#### 8.5.3 Ping the internet (for Urdu TTS)
+
+```powershell
+ping 8.8.8.8
+```
+
+Replies mean the server has outbound connectivity (needed for voice announcements).
+
+#### 8.5.4 Confirm the queue app is reachable on the LAN
+
+With the app running (Step 7 test or Step 9 PM2), on **another clinic PC or tablet** (not the server), open a browser:
+
+```
+http://SERVER_IP:4789/display
+```
+
+Example: `http://192.168.1.10:4789/display`
+
+The display page should load. If it fails, recheck the firewall rule (Step 8.1 or 8.2).
+
+#### 8.5.5 Reboot test (important)
+
+On the **Windows Server**:
+
+1. Restart the machine: **Start** → **Restart**
+2. After login, run `ipconfig` — IP must still be `SERVER_IP`
+3. Run `pm2 status` (after Step 9) — `TokenQueue` should be **online**
+4. From a clinic tablet, open `http://SERVER_IP:4789/display` again
+
+Use this `SERVER_IP` in all clinic device URLs in Step 10.
+
+---
+
+### 8.6 Static IP troubleshooting
+
+| Problem | Machine | Fix |
+|---------|---------|-----|
+| “IP conflict” or no network after static setup | **Windows Server** | Another device uses the same IP — pick a different `SERVER_IP` or add DHCP reservation (Option A) |
+| Can ping gateway but not other PCs | **Windows Server** | Wrong subnet mask — use `255.255.255.0` and `PrefixLength 24` on `/24` networks |
+| IP reverts after reboot | **Windows Server** / router | Option B not saved; or DHCP overrides — prefer Option A (router reservation) |
+| No internet / TTS fails | **Windows Server** | DNS missing — set Preferred DNS to gateway or `8.8.8.8` |
+| `New-NetIPAddress` error | **Windows Server** | Run `Remove-NetIPAddress` / `Remove-NetRoute` first; confirm **InterfaceAlias** name |
+| Display URL works on server but not tablets | **Windows Server** | Firewall (Step 8.1); confirm tablets use `http://SERVER_IP:4789` not `localhost` |
+
 
 ## Step 9 — Run with PM2 on Windows Server (auto-start on boot)
 
@@ -453,7 +702,7 @@ pm2-service-uninstall
 
 Run these steps on the **hall TV** and **staff tablets** — not on your Mac or necessarily on the Windows Server console.
 
-Replace `SERVER_IP` with the Windows Server LAN IP from Step 8.3 (example: `192.168.1.10`).
+Replace `SERVER_IP` with the Windows Server LAN IP you set in **Step 8** (example: `192.168.1.10`).
 
 ---
 
@@ -548,7 +797,7 @@ pm2 save
 | Page loads but tokens don’t update | **Windows Server** | `pm2 status` — is TokenQueue **online**? Check `logs\pm2-error.log` |
 | No Urdu voice | **Windows Server** + **display** | Server needs **internet** for TTS; display speaker not muted; tap screen once if needed |
 | “TTS unavailable” on display | **Windows Server** | Outbound HTTPS for Edge TTS; open TTS URL in server browser |
-| Wrong IP after reboot | **Windows Server** | Set static IP or DHCP reservation |
+| Wrong IP after reboot | **Windows Server** | Complete **Step 8.4** (static IP or DHCP reservation); run reboot test **Step 8.5.5** |
 | PM2 app won’t start | **Windows Server** | Run `node dist\main.js` manually; then `pm2 logs TokenQueue --err --lines 50` |
 | PM2 not running after reboot | **Windows Server** | Re-run Step 9.5; confirm `pm2 save`; check auto-login or PM2 service |
 | Port 4789 in use | **Windows Server** | `netstat -ano \| findstr :4789` — stop conflicting app or change `APP_PORT` in `src\app.config.ts`, rebuild on server |
@@ -629,7 +878,7 @@ http://SERVER_IP:4789/room2
 - [ ] Project copied from Mac (without `node_modules` or `dist`)
 - [ ] `npm install` and `npm run build` completed without errors on Windows
 - [ ] Windows Firewall allows inbound TCP 4789 on LAN
-- [ ] Server has stable LAN IP
+- [ ] Static LAN IP configured and verified (Step 8.3–8.5; reboot test passed)
 - [ ] PM2 installed; `TokenQueue` process saved and auto-start configured (Step 9.5)
 - [ ] TTS sample URL plays or downloads from server browser
 - [ ] Server has internet access for Urdu announcements
