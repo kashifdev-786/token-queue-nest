@@ -1,9 +1,8 @@
 /**
- * Urdu token announcer — uses server TTS (Microsoft Urdu neural voice).
- * Browser speech is only used as fallback when an Urdu system voice exists.
+ * Token announcer — server TTS only (Microsoft Swara: hi-IN-SwaraNeural).
+ * On-screen captions stay Urdu; spoken audio uses clear Urdu-like pronunciation.
  */
 (function (global) {
-  const URDU_DIGITS = ['صفر', 'ایک', 'دو', 'تین', 'چار', 'پانچ', 'چھ', 'سات', 'آٹھ', 'نو'];
   const URDU_ONES = [
     'صفر', 'ایک', 'دو', 'تین', 'چار', 'پانچ', 'چھ', 'سات', 'آٹھ', 'نو', 'دس',
     'گیارہ', 'بارہ', 'تیرہ', 'چودہ', 'پندرہ', 'سولہ', 'سترہ', 'اٹھارہ', 'انیس',
@@ -13,29 +12,24 @@
     room1: 'کمرہ نمبر ایک',
     room2: 'کمرہ نمبر دو',
   };
+  const SILENT_WAV =
+    'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+  const TTS_VOICE = 'hi-IN-SwaraNeural';
+  const TTS_RETRIES = 2;
 
-  const synth = window.speechSynthesis;
-  let voices = [];
   let enabled = false;
   let pending = null;
   let currentAudio = null;
-  let useServerTts = true;
-
-  function tokenDigitsToUrdu(tokenNumber) {
-    return String(tokenNumber)
-      .split('')
-      .map((d) => URDU_DIGITS[parseInt(d, 10)] || d)
-      .join(' ');
-  }
+  let currentObjectUrl = null;
 
   function tokenToUrduNumber(tokenNumber) {
     const n = parseInt(tokenNumber, 10);
     if (Number.isNaN(n) || n < 0) return String(tokenNumber);
     if (n < 20) return URDU_ONES[n];
     if (n < 100) {
-      const tens = Math.floor(n / 10);
-      const ones = n % 10;
-      return ones ? `${URDU_TENS[tens]} ${URDU_ONES[ones]}` : URDU_TENS[tens];
+      const t = Math.floor(n / 10);
+      const o = n % 10;
+      return o ? `${URDU_TENS[t]} ${URDU_ONES[o]}` : URDU_TENS[t];
     }
     if (n < 1000) {
       const hundreds = Math.floor(n / 100);
@@ -44,7 +38,7 @@
       if (!rest) return hundredPart;
       return `${hundredPart} ${tokenToUrduNumber(rest)}`;
     }
-    return tokenDigitsToUrdu(tokenNumber);
+    return String(tokenNumber);
   }
 
   function buildAnnouncement(tokenNumber, roomKeyOrName) {
@@ -53,127 +47,139 @@
     return `ٹوکن نمبر ${token}، ${room} میں آ جائیں`;
   }
 
-  function pickUrduVoice() {
-    if (!synth) return null;
-    if (!voices.length) voices = synth.getVoices();
-    return (
-      voices.find((v) => v.lang === 'ur-PK') ||
-      voices.find((v) => v.lang.startsWith('ur')) ||
-      voices.find((v) => /urdu/i.test(v.name)) ||
-      null
-    );
+  function setSpeakerActive(active) {
+    const el = document.getElementById('speakerIndicator');
+    if (!el) return;
+    el.classList.toggle('speaking', active);
+    el.setAttribute('aria-label', active ? 'Announcement playing' : 'Speaker ready');
   }
 
-  function loadVoices() {
-    voices = synth ? synth.getVoices() : [];
-    updateVoiceStatus();
-  }
-
-  function updateVoiceStatus(mode) {
+  function updateVoiceStatus(state) {
     const el = document.getElementById('audioStatus');
     if (!el) return;
 
     if (!enabled) {
-      el.textContent = 'آڈیو بند — فعال کریں';
+      el.textContent = 'Speaker off — tap to enable';
       el.className = 'audio-badge muted';
       return;
     }
 
-    if (mode === 'server') {
-      el.textContent = 'اردو آڈیو فعال';
+    if (state === 'ready') {
+      el.textContent = 'Hindi speaker on';
       el.className = 'audio-badge ready';
       return;
     }
 
-    if (mode === 'browser') {
-      el.textContent = 'اردو آڈیو (سسٹم)';
-      el.className = 'audio-badge ready';
-      return;
-    }
-
-    if (useServerTts) {
-      el.textContent = 'اردو آڈیو فعال';
-      el.className = 'audio-badge ready';
-      return;
-    }
-
-    const voice = pickUrduVoice();
-    if (voice) {
-      el.textContent = 'اردو آڈیو (سسٹم)';
-      el.className = 'audio-badge ready';
-    } else {
-      el.textContent = 'سرور انٹرنیٹ چیک کریں';
+    if (state === 'error') {
+      el.textContent = 'Speaker unavailable — check internet';
       el.className = 'audio-badge error';
     }
   }
 
+  function revokeObjectUrl() {
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
+  }
+
   function stopAllAudio() {
+    setSpeakerActive(false);
     if (currentAudio) {
       currentAudio.pause();
       currentAudio.src = '';
       currentAudio = null;
     }
-    if (synth) synth.cancel();
+    revokeObjectUrl();
   }
 
-  function playAudioUrl(url) {
+  function playBlob(blob) {
     stopAllAudio();
     return new Promise((resolve, reject) => {
-      const audio = new Audio(url);
+      const objectUrl = URL.createObjectURL(blob);
+      currentObjectUrl = objectUrl;
+      const audio = new Audio(objectUrl);
       currentAudio = audio;
       audio.volume = 1;
-      audio.onended = () => resolve(true);
-      audio.onerror = () => reject(new Error('Audio playback failed'));
-      audio.play().catch(reject);
+      audio.onplay = () => setSpeakerActive(true);
+      audio.onended = () => {
+        setSpeakerActive(false);
+        revokeObjectUrl();
+        resolve(true);
+      };
+      audio.onerror = () => {
+        setSpeakerActive(false);
+        revokeObjectUrl();
+        reject(new Error('Audio playback failed'));
+      };
+      audio.play().catch((err) => {
+        setSpeakerActive(false);
+        revokeObjectUrl();
+        reject(err);
+      });
     });
   }
 
-  async function speakViaServer(tokenNumber, roomKey, isTest) {
-    const url = isTest
-      ? `/api/tts?test=1&_=${Date.now()}`
-      : `/api/tts?token=${encodeURIComponent(tokenNumber)}&room=${encodeURIComponent(roomKey)}&_=${Date.now()}`;
-
-    await playAudioUrl(url);
-    useServerTts = true;
-    updateVoiceStatus('server');
-    return true;
+  function unlockAudioPlayback() {
+    return new Promise((resolve, reject) => {
+      const audio = new Audio(SILENT_WAV);
+      audio.volume = 0;
+      audio.onended = () => resolve(true);
+      audio.onerror = () => reject(new Error('Silent unlock failed'));
+      audio.play().then(resolve).catch(reject);
+    });
   }
 
-  function speakViaBrowser(text) {
-    const voice = pickUrduVoice();
-    if (!voice || !synth) return false;
+  async function fetchTtsAudio(tokenNumber, roomKey) {
+    const url =
+      `/api/tts?token=${encodeURIComponent(tokenNumber)}&room=${encodeURIComponent(roomKey)}&_=${Date.now()}`;
 
-    synth.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = voice.lang || 'ur-PK';
-    utter.voice = voice;
-    utter.rate = 0.82;
-    utter.volume = 1;
-    synth.speak(utter);
-    useServerTts = false;
-    updateVoiceStatus('browser');
-    return true;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(`TTS HTTP ${res.status}`);
+    }
+
+    const voice = res.headers.get('X-TTS-Voice');
+    if (voice && voice !== TTS_VOICE) {
+      console.warn('Unexpected TTS voice header:', voice);
+    }
+
+    const contentType = res.headers.get('Content-Type') || '';
+    if (!contentType.includes('audio')) {
+      throw new Error('TTS response is not audio');
+    }
+
+    const blob = await res.blob();
+    if (!blob.size) {
+      throw new Error('TTS audio empty');
+    }
+    return blob;
   }
 
-  async function speakNow(tokenNumber, roomKey, isTest) {
-    if (isTest) {
+  async function speakViaServer(tokenNumber, roomKey) {
+    let lastError;
+
+    for (let attempt = 1; attempt <= TTS_RETRIES; attempt++) {
       try {
-        return await speakViaServer(null, null, true);
-      } catch {
-        return speakViaBrowser('آڈیو سسٹم فعال ہے');
+        const blob = await fetchTtsAudio(tokenNumber, roomKey);
+        await playBlob(blob);
+        updateVoiceStatus('ready');
+        return true;
+      } catch (err) {
+        lastError = err;
+        console.warn(`TTS attempt ${attempt}/${TTS_RETRIES} failed:`, err);
+        if (attempt < TTS_RETRIES) {
+          await new Promise((r) => setTimeout(r, 400));
+        }
       }
     }
 
-    const text = buildAnnouncement(tokenNumber, roomKey);
+    updateVoiceStatus('error');
+    throw lastError;
+  }
 
-    try {
-      return await speakViaServer(tokenNumber, roomKey, false);
-    } catch (err) {
-      console.warn('Server Urdu TTS failed, trying browser Urdu voice:', err);
-      if (speakViaBrowser(text)) return true;
-      updateVoiceStatus('error');
-      return false;
-    }
+  async function speakNow(tokenNumber, roomKey) {
+    return speakViaServer(tokenNumber, roomKey);
   }
 
   function speak(tokenNumber, roomKey) {
@@ -182,27 +188,34 @@
       showUnlockOverlay(true);
       return;
     }
-    speakNow(tokenNumber, roomKey, false);
+    speakNow(tokenNumber, roomKey).catch(() => {});
+  }
+
+  async function speakSample() {
+    return speakNow(1, 'room1');
   }
 
   async function enableAudio() {
     enabled = true;
+    try {
+      sessionStorage.setItem('tokenQueueSwara', '1');
+    } catch (_) { /* private mode */ }
+
     hideUnlockOverlay();
-    loadVoices();
 
-    if (synth) {
-      const prime = new SpeechSynthesisUtterance(' ');
-      prime.volume = 0.01;
-      synth.speak(prime);
-      synth.cancel();
+    // Silent unlock only — Swara does NOT speak on enable (browser policy).
+    try {
+      await unlockAudioPlayback();
+      updateVoiceStatus('ready');
+    } catch (err) {
+      console.warn('Silent audio unlock failed:', err);
+      updateVoiceStatus('error');
     }
-
-    await speakNow(null, null, true);
 
     if (pending) {
       const next = pending;
       pending = null;
-      setTimeout(() => speakNow(next.tokenNumber, next.roomKey, false), 800);
+      setTimeout(() => speakNow(next.tokenNumber, next.roomKey).catch(() => {}), 400);
     }
 
     return true;
@@ -220,10 +233,21 @@
   }
 
   function init() {
-    loadVoices();
-    if (synth) synth.onvoiceschanged = loadVoices;
-    showUnlockOverlay(true);
-    updateVoiceStatus();
+    let restored = false;
+    try {
+      restored = sessionStorage.getItem('tokenQueueSwara') === '1';
+    } catch (_) { /* private mode */ }
+
+    if (restored) {
+      enabled = true;
+      hideUnlockOverlay();
+      unlockAudioPlayback()
+        .then(() => updateVoiceStatus('ready'))
+        .catch(() => updateVoiceStatus('error'));
+    } else {
+      showUnlockOverlay(true);
+      updateVoiceStatus();
+    }
 
     const btn = document.getElementById('enableAudioBtn');
     if (btn) btn.addEventListener('click', enableAudio);
@@ -234,9 +258,17 @@
         if (!enabled) showUnlockOverlay(true);
       });
     }
+
+    const speaker = document.getElementById('speakerIndicator');
+    if (speaker) {
+      speaker.addEventListener('click', () => {
+        if (!enabled) showUnlockOverlay(true);
+        else speakSample().catch(() => {});
+      });
+    }
   }
 
-  global.TokenAnnouncer = { init, enableAudio, speak, buildAnnouncement };
+  global.TokenAnnouncer = { init, enableAudio, speak, buildAnnouncement, speakSample };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

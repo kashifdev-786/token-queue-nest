@@ -31,6 +31,7 @@ export class TtsController {
 
       res.setHeader('Content-Type', 'audio/mpeg');
       res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-TTS-Voice', this.tts.getVoiceName());
       res.send(audio);
     } catch (error) {
       this.tts.logFailure(error);

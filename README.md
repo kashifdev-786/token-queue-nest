@@ -1,53 +1,58 @@
-# 👁 Eye Hospital Token Queue System
+# Zahid Clinic Eye & Dental — Token Queue System
 
-Real-time LAN-based token display with Urdu voice announcements.
+Real-time LAN token display for **Zahid clinic Eye & Dental**, with staff panels for Room 1 and Room 2 and **Urdu voice announcements** on the hall display.
+
+This product is deployed on **Windows Server** in the clinic. See the full deployment guide:
+
+**→ [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md)**
 
 ---
 
-## Setup
+## Quick start (development / testing)
 
-### 1. Install Node.js
-Download from https://nodejs.org (v18 or higher)
+Requires **Node.js v20+**.
 
-### 2. Install dependencies
-```bash
-cd eye-hospital-token-queue
+```powershell
+cd token-queue-nest
 npm install
-```
-
-### 3. Run the server
-```bash
 npm start
 ```
+
+Production on Windows Server uses `npm run build` and `npm run start:prod` — details are in [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md).
 
 ---
 
 ## Access URLs
 
-Find your MacBook's LAN IP:
-```bash
-ipconfig getifaddr en0
-# Example: 192.168.1.10
-```
+Replace `SERVER_IP` with your Windows Server LAN address (example: `192.168.1.10`).
 
 | Screen | URL |
-|---|---|
-| 📺 Display Hall (TV/projector) | `http://192.168.1.10:3000/display` |
-| 🩺 Room 1 Panel (staff tablet) | `http://192.168.1.10:3000/room1` |
-| 👨‍⚕️ Room 2 Panel (staff tablet) | `http://192.168.1.10:3000/room2` |
+|--------|-----|
+| Hall display (TV) | `http://SERVER_IP:3000/display` |
+| Room 1 — Consultation (Dr. Zahid Chaudhry) | `http://SERVER_IP:3000/room1` |
+| Room 2 — Basic eye checkup & counseling | `http://SERVER_IP:3000/room2` |
 
 ---
 
 ## Features
-- ✅ Real-time token update via WebSocket
-- ✅ Urdu voice announcement on each token call (`ur-PK`)
-- ✅ Quick Next / Previous token buttons
-- ✅ Custom + preset announcements (ticker on display)
-- ✅ No internet required — fully LAN-based
+
+- Real-time token updates via WebSocket
+- Urdu announcements on token call (clear **Swara** voice — natural Urdu-like speech)
+- Room 1 & Room 2 staff panels with Next / Previous
+- Custom and preset announcements on the hall ticker
+- Runs on clinic LAN; server needs internet only for voice synthesis
 
 ---
 
-## Notes
-- Voice works best in Chrome/Edge (best `ur-PK` voice support)
-- Display screen should be opened in Chrome fullscreen (F11)
-- Server must stay running on the MacBook
+## Client browsers
+
+- **Display TV:** Chrome or Edge, fullscreen (F11), enable speaker once
+- **Staff tablets:** Chrome or Edge; bookmark Room 1 / Room 2 URLs
+
+---
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md) | Full Windows Server install, firewall, PM2 process manager, troubleshooting |
