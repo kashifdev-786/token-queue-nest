@@ -7,7 +7,7 @@ This guide labels every step with the machine where it runs:
 | Label | Machine |
 |-------|---------|
 | **Mac** | Your development computer |
-| **Windows Server** | Clinic server PC (runs Node.js on port **3000**) |
+| **Windows Server** | Clinic server PC (runs Node.js on port **4789**) |
 | **Clinic devices** | Hall TV, Room 1 tablet, Room 2 tablet (same LAN as server) |
 
 ---
@@ -31,7 +31,7 @@ This guide labels every step with the machine where it runs:
 
 | Component | Role |
 |-----------|------|
-| **Windows Server** | Runs Node.js app on port **3000** |
+| **Windows Server** | Runs Node.js app on port **4789** |
 | **Hall TV / projector** | Opens `/display` in Chrome or Edge (fullscreen) |
 | **Room 1 tablet/PC** | Opens `/room1` for consultation tokens |
 | **Room 2 tablet/PC** | Opens `/room2` for checkup tokens |
@@ -105,10 +105,10 @@ Open in your Mac browser:
 
 | Test | URL |
 |------|-----|
-| Display page | `http://localhost:3000/display` |
-| Room 1 panel | `http://localhost:3000/room1` |
-| Room 2 panel | `http://localhost:3000/room2` |
-| Urdu TTS sample | `http://localhost:3000/api/tts?token=1&room=room1` |
+| Display page | `http://localhost:4789/display` |
+| Room 1 panel | `http://localhost:4789/room1` |
+| Room 2 panel | `http://localhost:4789/room2` |
+| Urdu TTS sample | `http://localhost:4789/api/tts?token=1&room=room1` |
 
 Stop the dev server with **Ctrl+C** when finished testing.
 
@@ -232,10 +232,10 @@ You should see output similar to:
 
 ```
 ✅ Token Queue Server (NestJS) running
-   Local:   http://localhost:3000
-   Display: http://192.168.1.10:3000/display
-   Room 1:  http://192.168.1.10:3000/room1
-   Room 2:  http://192.168.1.10:3000/room2
+   Local:   http://localhost:4789
+   Display: http://192.168.1.10:4789/display
+   Room 1:  http://192.168.1.10:4789/room1
+   Room 2:  http://192.168.1.10:4789/room2
 ```
 
 Note the **Display / Room URLs** and your server LAN IP.
@@ -246,10 +246,10 @@ Open these in a browser **on the Windows Server**:
 
 | Test | URL |
 |------|-----|
-| Display page | `http://localhost:3000/display` |
-| Room 1 panel | `http://localhost:3000/room1` |
-| Room 2 panel | `http://localhost:3000/room2` |
-| Urdu TTS sample | `http://localhost:3000/api/tts?token=1&room=room1` |
+| Display page | `http://localhost:4789/display` |
+| Room 1 panel | `http://localhost:4789/room1` |
+| Room 2 panel | `http://localhost:4789/room2` |
+| Urdu TTS sample | `http://localhost:4789/api/tts?token=1&room=room1` |
 
 Stop the test with **Ctrl+C** before setting up PM2 (Step 9).
 
@@ -257,7 +257,7 @@ Stop the test with **Ctrl+C** before setting up PM2 (Step 9).
 
 ## Step 8 — Open Windows Firewall and set LAN IP
 
-On the **Windows Server**, allow other clinic PCs and tablets to reach port **3000**.
+On the **Windows Server**, allow other clinic PCs and tablets to reach port **4789**.
 
 ### 8.1 Firewall rule (PowerShell — recommended)
 
@@ -268,7 +268,7 @@ New-NetFirewallRule `
   -DisplayName "Zahid Clinic Token Queue" `
   -Direction Inbound `
   -Protocol TCP `
-  -LocalPort 3000 `
+  -LocalPort 4789 `
   -Action Allow `
   -Profile Domain,Private
 ```
@@ -281,7 +281,7 @@ On the **Windows Server**:
 
 1. Open **Windows Defender Firewall with Advanced Security**.
 2. **Inbound Rules** → **New Rule…**
-3. **Port** → TCP → **3000**
+3. **Port** → TCP → **4789**
 4. **Allow the connection**
 5. Name: `Zahid Clinic Token Queue`
 
@@ -461,16 +461,16 @@ Replace `SERVER_IP` with the Windows Server LAN IP from Step 8.3 (example: `192.
 
 | Device | URL | Notes |
 |--------|-----|--------|
-| **Hall display (TV)** | `http://SERVER_IP:3000/display` | Chrome/Edge fullscreen (F11) |
-| **Room 1 staff** | `http://SERVER_IP:3000/room1` | Tablet or PC at consultation desk |
-| **Room 2 staff** | `http://SERVER_IP:3000/room2` | Tablet or PC at checkup desk |
+| **Hall display (TV)** | `http://SERVER_IP:4789/display` | Chrome/Edge fullscreen (F11) |
+| **Room 1 staff** | `http://SERVER_IP:4789/room1` | Tablet or PC at consultation desk |
+| **Room 2 staff** | `http://SERVER_IP:4789/room2` | Tablet or PC at checkup desk |
 
 ### Hall display (TV) setup
 
 On the **hall TV** or PC connected to the projector:
 
 1. Open Chrome or Edge.
-2. Go to `http://SERVER_IP:3000/display`
+2. Go to `http://SERVER_IP:4789/display`
 3. Confirm the badge shows **Speaker on** (speaker is on by default).
 4. **Tap the screen once** if the badge says **Tap screen once to play** — browsers require one user interaction before audio.
 5. Press **F11** for fullscreen (or use the fullscreen button in the page header).
@@ -544,21 +544,21 @@ pm2 save
 |---------|---------|----------------|
 | Build fails on Mac | **Mac** | `npm install`; read TypeScript errors in Terminal |
 | Build fails on server | **Windows Server** | Run `npm run build` manually; do not use Mac `dist\` |
-| Cannot open URLs from other PCs | **Windows Server** | Firewall rule for port 3000; server and clients on same subnet |
+| Cannot open URLs from other PCs | **Windows Server** | Firewall rule for port 4789; server and clients on same subnet |
 | Page loads but tokens don’t update | **Windows Server** | `pm2 status` — is TokenQueue **online**? Check `logs\pm2-error.log` |
 | No Urdu voice | **Windows Server** + **display** | Server needs **internet** for TTS; display speaker not muted; tap screen once if needed |
 | “TTS unavailable” on display | **Windows Server** | Outbound HTTPS for Edge TTS; open TTS URL in server browser |
 | Wrong IP after reboot | **Windows Server** | Set static IP or DHCP reservation |
 | PM2 app won’t start | **Windows Server** | Run `node dist\main.js` manually; then `pm2 logs TokenQueue --err --lines 50` |
 | PM2 not running after reboot | **Windows Server** | Re-run Step 9.5; confirm `pm2 save`; check auto-login or PM2 service |
-| Port 3000 in use | **Windows Server** | `netstat -ano \| findstr :3000` — stop conflicting app or change port in `src\main.ts`, rebuild on server |
+| Port 4789 in use | **Windows Server** | `netstat -ano \| findstr :4789` — stop conflicting app or change `APP_PORT` in `src\app.config.ts`, rebuild on server |
 
 ### Test TTS from Windows Server browser
 
 On the **Windows Server**, open:
 
 ```
-http://localhost:3000/api/tts?token=5&room=room1
+http://localhost:4789/api/tts?token=5&room=room1
 ```
 
 Audio playback or download means TTS is working.
@@ -575,7 +575,7 @@ Get-Content C:\Apps\token-queue-nest\logs\pm2-error.log -Tail 50
 ## Security notes (clinic LAN)
 
 - This app is intended for a **trusted local network**, not public internet exposure.
-- Do not port-forward 3000 to the internet without a reverse proxy, HTTPS, and authentication.
+- Do not port-forward 4789 to the internet without a reverse proxy, HTTPS, and authentication.
 - Keep Windows Server patched; restrict physical access to the server room.
 
 ---
@@ -609,9 +609,9 @@ pm2 save
 ### Clinic devices
 
 ```
-http://SERVER_IP:3000/display
-http://SERVER_IP:3000/room1
-http://SERVER_IP:3000/room2
+http://SERVER_IP:4789/display
+http://SERVER_IP:4789/room1
+http://SERVER_IP:4789/room2
 ```
 
 ---
@@ -628,7 +628,7 @@ http://SERVER_IP:3000/room2
 - [ ] Node.js installed and in PATH
 - [ ] Project copied from Mac (without `node_modules` or `dist`)
 - [ ] `npm install` and `npm run build` completed without errors on Windows
-- [ ] Windows Firewall allows inbound TCP 3000 on LAN
+- [ ] Windows Firewall allows inbound TCP 4789 on LAN
 - [ ] Server has stable LAN IP
 - [ ] PM2 installed; `TokenQueue` process saved and auto-start configured (Step 9.5)
 - [ ] TTS sample URL plays or downloads from server browser

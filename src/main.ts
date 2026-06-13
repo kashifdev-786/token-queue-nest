@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as os from 'os';
+import { APP_PORT } from './app.config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -11,7 +12,7 @@ async function bootstrap() {
   // Serve frontend static files
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || APP_PORT;
   await app.listen(PORT, '0.0.0.0');
 
   // Print LAN IP

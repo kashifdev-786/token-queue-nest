@@ -28,9 +28,9 @@ Replace `SERVER_IP` with your Windows Server LAN address (example: `192.168.1.10
 
 | Screen | URL |
 |--------|-----|
-| Hall display (TV) | `http://SERVER_IP:3000/display` |
-| Room 1 — Consultation (Dr. Zahid Chaudhry) | `http://SERVER_IP:3000/room1` |
-| Room 2 — Basic eye checkup & counseling | `http://SERVER_IP:3000/room2` |
+| Hall display (TV) | `http://SERVER_IP:4789/display` |
+| Room 1 — Consultation (Dr. Zahid Chaudhry) | `http://SERVER_IP:4789/room1` |
+| Room 2 — Basic eye checkup & counseling | `http://SERVER_IP:4789/room2` |
 
 ---
 
