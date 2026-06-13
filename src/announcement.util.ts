@@ -81,11 +81,11 @@ export function buildAnnouncement(tokenNumber: number | string, roomKey: string)
   return `ٹوکن نمبر ${token}، ${room} میں آ جائیں`;
 }
 
-/** Spoken announcement — pure Hindi/Urdu phrasing for Swara (avoid English loanwords like टोकन). */
+/** Spoken announcement — pure Devanagari for Swara (Urdu script is skipped/mangled by hi-IN voice). */
 export function buildSpokenAnnouncement(tokenNumber: number | string, roomKey: string): string {
   const token = tokenToSpokenNumber(tokenNumber);
   const room = ROOM_PHRASES_SPOKEN[roomKey] ?? roomKey;
-  return `براہ کرم ٹوکن نمبر ${token}، ${room} میں تشریف لے جائیں`;
+  return `बराए मेहरबानी, टोकन नंबर ${token}, ${room} में आ जाइए`;
 }
 
 export function buildSpokenTestAnnouncement(): string {

@@ -1,6 +1,6 @@
 /**
  * Token announcer — server TTS only (Microsoft Swara: hi-IN-SwaraNeural).
- * On-screen captions stay Urdu; spoken audio uses clear Urdu-like pronunciation.
+ * Speaker is ON by default; user mutes with one button. Preference persists in localStorage.
  */
 (function (global) {
   const URDU_ONES = [
@@ -16,13 +16,33 @@
     'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
   const TTS_VOICE = 'hi-IN-SwaraNeural';
   const TTS_RETRIES = 2;
+  const MUTE_STORAGE_KEY = 'tokenQueueSpeakerMuted';
 
-  let enabled = false;
+  let muted = false;
+  let unlocked = false;
   let pending = null;
+  let pendingBlob = null;
   let currentAudio = null;
   let currentObjectUrl = null;
+  let audioCtx = null;
+  let unlockListenerAttached = false;
+  const blobCache = new Map();
 
   const MAX_TOKEN_NUMBER = 1000;
+
+  function loadMuted() {
+    try {
+      return localStorage.getItem(MUTE_STORAGE_KEY) === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function saveMuted(value) {
+    try {
+      localStorage.setItem(MUTE_STORAGE_KEY, value ? '1' : '0');
+    } catch (_) { /* private mode */ }
+  }
 
   function tokenToUrduNumber(tokenNumber) {
     const n = parseInt(tokenNumber, 10);
@@ -51,30 +71,64 @@
   }
 
   function setSpeakerActive(active) {
-    const el = document.getElementById('speakerIndicator');
+    const el = document.getElementById('speakerMuteBtn');
     if (!el) return;
     el.classList.toggle('speaking', active);
-    el.setAttribute('aria-label', active ? 'Announcement playing' : 'Speaker ready');
+  }
+
+  function syncMuteUi() {
+    const muteBtn = document.getElementById('speakerMuteBtn');
+    const statusEl = document.getElementById('audioStatus');
+
+    if (muteBtn) {
+      muteBtn.classList.toggle('is-muted', muted);
+      muteBtn.title = muted ? 'Unmute announcements' : 'Mute announcements';
+      muteBtn.setAttribute('aria-label', muted ? 'Unmute speaker' : 'Mute speaker');
+    }
+
+    if (statusEl && !statusEl.classList.contains('error')) {
+      if (muted) {
+        statusEl.textContent = 'Speaker muted';
+        statusEl.className = 'audio-badge muted';
+      } else if (pendingBlob) {
+        statusEl.textContent = 'Tap screen once to play';
+        statusEl.className = 'audio-badge warn';
+      } else {
+        statusEl.textContent = 'Speaker on';
+        statusEl.className = 'audio-badge ready';
+      }
+    }
   }
 
   function updateVoiceStatus(state) {
     const el = document.getElementById('audioStatus');
     if (!el) return;
 
-    if (!enabled) {
-      el.textContent = 'Speaker off — tap to enable';
-      el.className = 'audio-badge muted';
+    if (muted) {
+      syncMuteUi();
       return;
     }
 
     if (state === 'ready') {
-      el.textContent = 'Hindi speaker on';
+      el.textContent = 'Speaker on';
       el.className = 'audio-badge ready';
       return;
     }
 
-    if (state === 'error') {
-      el.textContent = 'Speaker unavailable — check internet';
+    if (state === 'ttsFailed') {
+      el.textContent = 'TTS unavailable — check server internet';
+      el.className = 'audio-badge error';
+      return;
+    }
+
+    if (state === 'serverFailed') {
+      el.textContent = 'Cannot reach queue server';
+      el.className = 'audio-badge error';
+      return;
+    }
+
+    if (state === 'playbackFailed') {
+      el.textContent = 'Playback failed — tap mute to retry';
       el.className = 'audio-badge error';
     }
   }
@@ -123,21 +177,92 @@
     });
   }
 
-  function unlockAudioPlayback() {
-    return new Promise((resolve, reject) => {
-      const audio = new Audio(SILENT_WAV);
-      audio.volume = 0;
-      audio.onended = () => resolve(true);
-      audio.onerror = () => reject(new Error('Silent unlock failed'));
-      audio.play().then(resolve).catch(reject);
-    });
+  async function resumeAudioContext() {
+    const Ctx = global.AudioContext || global.webkitAudioContext;
+    if (!Ctx) return;
+    if (!audioCtx) audioCtx = new Ctx();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
   }
 
-  async function fetchTtsAudio(tokenNumber, roomKey) {
-    const url =
-      `/api/tts?token=${encodeURIComponent(tokenNumber)}&room=${encodeURIComponent(roomKey)}&_=${Date.now()}`;
+  async function unlockAudioPlayback() {
+    await resumeAudioContext();
+    const audio = new Audio(SILENT_WAV);
+    audio.volume = 0;
+    audio.preload = 'auto';
+    await audio.play();
+    unlocked = true;
+    return true;
+  }
 
-    const res = await fetch(url, { cache: 'no-store' });
+  async function tryPlayPending() {
+    if (muted || !pendingBlob) return false;
+    try {
+      if (!unlocked) await unlockAudioPlayback();
+      const blob = pendingBlob;
+      pendingBlob = null;
+      pending = null;
+      await playBlob(blob);
+      updateVoiceStatus('ready');
+      syncMuteUi();
+      return true;
+    } catch (err) {
+      console.warn('Pending playback failed:', err);
+      unlocked = false;
+      return false;
+    }
+  }
+
+  function tryUnlockSilently() {
+    if (unlocked || muted) {
+      if (unlocked) tryPlayPending();
+      return;
+    }
+    unlockAudioPlayback()
+      .then(() => tryPlayPending())
+      .catch(() => {});
+  }
+
+  function setupAutoUnlockOnInteraction() {
+    if (unlockListenerAttached) return;
+    unlockListenerAttached = true;
+
+    const unlockOnce = () => {
+      if (muted) return;
+      unlockAudioPlayback()
+        .then(() => tryPlayPending())
+        .catch(() => {});
+      if (unlocked && !pendingBlob) {
+        document.removeEventListener('pointerdown', unlockOnce, true);
+        document.removeEventListener('keydown', unlockOnce, true);
+      }
+    };
+
+    document.addEventListener('pointerdown', unlockOnce, true);
+    document.addEventListener('keydown', unlockOnce, true);
+  }
+
+  function classifyTtsError(err) {
+    const message = err && err.message ? err.message : String(err);
+    if (/failed to fetch|networkerror|load failed/i.test(message)) {
+      return 'serverFailed';
+    }
+    if (/TTS HTTP|not audio|audio empty|unavailable/i.test(message)) {
+      return 'ttsFailed';
+    }
+    if (/playback|play\(\)|Silent unlock/i.test(message)) {
+      return 'playbackFailed';
+    }
+    return 'ttsFailed';
+  }
+
+  async function fetchTtsBlob(url, useCache) {
+    let res;
+    try {
+      res = await fetch(url, useCache ? {} : { cache: 'no-store' });
+    } catch (err) {
+      throw new Error(`Network error: ${err.message || err}`);
+    }
+
     if (!res.ok) {
       throw new Error(`TTS HTTP ${res.status}`);
     }
@@ -159,25 +284,72 @@
     return blob;
   }
 
+  async function fetchTtsAudio(tokenNumber, roomKey) {
+    const key = `${roomKey}:${tokenNumber}`;
+    const cached = blobCache.get(key);
+    if (cached) return cached;
+
+    const url =
+      `/api/tts?token=${encodeURIComponent(tokenNumber)}&room=${encodeURIComponent(roomKey)}`;
+    const blob = await fetchTtsBlob(url, true);
+    blobCache.set(key, blob);
+    return blob;
+  }
+
+  async function ensureUnlockedIfNeeded() {
+    if (unlocked || muted) return;
+    try {
+      await unlockAudioPlayback();
+    } catch (_) {
+      unlocked = false;
+    }
+  }
+
   async function speakViaServer(tokenNumber, roomKey) {
+    if (muted) return false;
+
+    let blob;
+    try {
+      const fetchPromise = fetchTtsAudio(tokenNumber, roomKey);
+      const unlockPromise = ensureUnlockedIfNeeded();
+      [blob] = await Promise.all([fetchPromise, unlockPromise]);
+    } catch (err) {
+      updateVoiceStatus(classifyTtsError(err));
+      throw err;
+    }
+
     let lastError;
+    let lastState = 'playbackFailed';
 
     for (let attempt = 1; attempt <= TTS_RETRIES; attempt++) {
       try {
-        const blob = await fetchTtsAudio(tokenNumber, roomKey);
+        if (!unlocked) {
+          await unlockAudioPlayback();
+        }
+        pendingBlob = null;
+        pending = null;
         await playBlob(blob);
         updateVoiceStatus('ready');
+        syncMuteUi();
         return true;
       } catch (err) {
         lastError = err;
-        console.warn(`TTS attempt ${attempt}/${TTS_RETRIES} failed:`, err);
+        lastState = classifyTtsError(err);
+        console.warn(`TTS playback attempt ${attempt}/${TTS_RETRIES} failed:`, err);
+        if (lastState === 'playbackFailed') {
+          unlocked = false;
+          pendingBlob = blob;
+          pending = { tokenNumber, roomKey };
+          syncMuteUi();
+          return false;
+        }
         if (attempt < TTS_RETRIES) {
           await new Promise((r) => setTimeout(r, 400));
         }
       }
     }
 
-    updateVoiceStatus('error');
+    updateVoiceStatus(lastState);
     throw lastError;
   }
 
@@ -186,92 +358,83 @@
   }
 
   function speak(tokenNumber, roomKey) {
-    if (!enabled) {
-      pending = { tokenNumber, roomKey };
-      showUnlockOverlay(true);
-      return;
-    }
+    if (muted) return;
     speakNow(tokenNumber, roomKey).catch(() => {});
   }
 
   async function speakSample() {
+    if (muted) return false;
     return speakNow(1, 'room1');
   }
 
-  async function enableAudio() {
-    enabled = true;
-    try {
-      sessionStorage.setItem('tokenQueueSwara', '1');
-    } catch (_) { /* private mode */ }
+  function toggleMute() {
+    muted = !muted;
+    saveMuted(muted);
 
-    hideUnlockOverlay();
-
-    // Silent unlock only — Swara does NOT speak on enable (browser policy).
-    try {
-      await unlockAudioPlayback();
-      updateVoiceStatus('ready');
-    } catch (err) {
-      console.warn('Silent audio unlock failed:', err);
-      updateVoiceStatus('error');
-    }
-
-    if (pending) {
-      const next = pending;
+    if (muted) {
+      stopAllAudio();
       pending = null;
-      setTimeout(() => speakNow(next.tokenNumber, next.roomKey).catch(() => {}), 400);
+      pendingBlob = null;
+    } else {
+      tryUnlockSilently();
+      if (pending) {
+        setTimeout(() => tryPlayPending().catch(() => {}), 200);
+      }
     }
 
-    return true;
+    syncMuteUi();
+    return muted;
   }
 
-  function showUnlockOverlay(force) {
-    const overlay = document.getElementById('audioUnlock');
-    if (!overlay) return;
-    if (force || !enabled) overlay.hidden = false;
-  }
-
-  function hideUnlockOverlay() {
-    const overlay = document.getElementById('audioUnlock');
-    if (overlay) overlay.hidden = true;
+  function setMuted(value) {
+    if (muted === value) return;
+    muted = value;
+    saveMuted(muted);
+    if (muted) {
+      stopAllAudio();
+      pending = null;
+      pendingBlob = null;
+    } else {
+      tryUnlockSilently();
+    }
+    syncMuteUi();
   }
 
   function init() {
-    let restored = false;
-    try {
-      restored = sessionStorage.getItem('tokenQueueSwara') === '1';
-    } catch (_) { /* private mode */ }
+    muted = loadMuted();
+    syncMuteUi();
+    setupAutoUnlockOnInteraction();
+    tryUnlockSilently();
 
-    if (restored) {
-      enabled = true;
-      hideUnlockOverlay();
-      unlockAudioPlayback()
-        .then(() => updateVoiceStatus('ready'))
-        .catch(() => updateVoiceStatus('error'));
-    } else {
-      showUnlockOverlay(true);
-      updateVoiceStatus();
-    }
-
-    const btn = document.getElementById('enableAudioBtn');
-    if (btn) btn.addEventListener('click', enableAudio);
-
-    const badge = document.getElementById('audioStatus');
-    if (badge) {
-      badge.addEventListener('click', () => {
-        if (!enabled) showUnlockOverlay(true);
-      });
-    }
-
-    const speaker = document.getElementById('speakerIndicator');
-    if (speaker) {
-      speaker.addEventListener('click', () => {
-        if (!enabled) showUnlockOverlay(true);
-        else speakSample().catch(() => {});
+    const muteBtn = document.getElementById('speakerMuteBtn');
+    if (muteBtn) {
+      muteBtn.addEventListener('click', async () => {
+        const wasMuted = muted;
+        toggleMute();
+        if (!wasMuted && muted) return;
+        if (!muted) {
+          try {
+            await unlockAudioPlayback();
+            await tryPlayPending();
+            updateVoiceStatus('ready');
+            syncMuteUi();
+          } catch (err) {
+            console.warn('Speaker unlock failed:', err);
+          }
+        }
       });
     }
   }
 
-  global.TokenAnnouncer = { init, enableAudio, speak, buildAnnouncement, speakSample };
+  global.TokenAnnouncer = {
+    init,
+    speak,
+    buildAnnouncement,
+    speakSample,
+    toggleMute,
+    setMuted,
+    isMuted: () => muted,
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
