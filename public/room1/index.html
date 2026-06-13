@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Room no 1 — Consultation — Dr. Zahid Chaudhry</title>
   <script src="/socket.io/socket.io.js"></script>
-  <link rel="stylesheet" href="/shared/hospital-theme.css" />
+  <link rel="stylesheet" href="/shared/hospital-theme.css?v=compact-panel" />
 </head>
 <body>
   <div class="staff-shell">
@@ -27,7 +27,7 @@
         </div>
 
         <div class="staff-input-row">
-          <input type="number" id="tokenInput" placeholder="Token #" min="1" inputmode="numeric" />
+          <input type="number" id="tokenInput" placeholder="Token #" min="1" max="1000" inputmode="numeric" />
           <button class="staff-btn staff-btn-call" onclick="callToken()">Call Token</button>
         </div>
 
@@ -38,12 +38,6 @@
 
         <div class="staff-section">
           <div class="staff-section-label">Display Announcement</div>
-          <div class="staff-presets">
-            <button class="staff-preset-btn" onclick="setPreset('Please proceed to Room 2 for doctor consultation')">Proceed to Room 2</button>
-            <button class="staff-preset-btn" onclick="setPreset('Please wait — doctor will be back shortly')">Doctor unavailable</button>
-            <button class="staff-preset-btn" onclick="setPreset('Prayers break — queue will resume in 15 minutes')">Prayers break</button>
-            <button class="staff-preset-btn" onclick="setPreset('Please bring your previous medical reports and prescription')">Bring reports</button>
-          </div>
           <textarea class="staff-textarea" id="announceInput" placeholder="Type a custom announcement for the waiting hall display…"></textarea>
           <div class="staff-announce-row">
             <button class="staff-btn staff-btn-send" onclick="sendAnnouncement()">Send to Display</button>
@@ -80,14 +74,17 @@
 
     function callToken() {
       const val = parseInt(document.getElementById('tokenInput').value, 10);
-      if (!val || val < 1) return;
+      if (!val || val < 1 || val > 1000) {
+        showToast('Enter a token from 1 to 1000');
+        return;
+      }
       socket.emit('updateToken', { room: ROOM, token: val });
       showToast(`Token ${val} called`);
     }
 
     function adjustToken(delta) {
       const base = currentToken || 0;
-      const next = Math.max(1, base + delta);
+      const next = Math.min(1000, Math.max(1, base + delta));
       document.getElementById('tokenInput').value = next;
       socket.emit('updateToken', { room: ROOM, token: next });
       showToast(`Token ${next} called`);
@@ -103,10 +100,6 @@
       document.getElementById('announceInput').value = '';
       socket.emit('updateAnnouncement', '');
       showToast('Announcement cleared');
-    }
-
-    function setPreset(text) {
-      document.getElementById('announceInput').value = text;
     }
 
     function showToast(msg) {

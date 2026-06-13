@@ -20,8 +20,8 @@ export class TtsController {
         audio = await this.tts.synthesizeTest();
       } else {
         const tokenNum = parseInt(token, 10);
-        if (!tokenNum || tokenNum < 1) {
-          throw new BadRequestException('Invalid token');
+        if (!tokenNum || tokenNum < 1 || tokenNum > 1000) {
+          throw new BadRequestException('Invalid token (use 1–1000)');
         }
         if (!room || !['room1', 'room2'].includes(room)) {
           throw new BadRequestException('Invalid room');

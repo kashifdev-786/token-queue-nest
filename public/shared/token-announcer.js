@@ -22,16 +22,19 @@
   let currentAudio = null;
   let currentObjectUrl = null;
 
+  const MAX_TOKEN_NUMBER = 1000;
+
   function tokenToUrduNumber(tokenNumber) {
     const n = parseInt(tokenNumber, 10);
     if (Number.isNaN(n) || n < 0) return String(tokenNumber);
+    if (n === MAX_TOKEN_NUMBER) return 'ایک ہزار';
     if (n < 20) return URDU_ONES[n];
     if (n < 100) {
       const t = Math.floor(n / 10);
       const o = n % 10;
       return o ? `${URDU_TENS[t]} ${URDU_ONES[o]}` : URDU_TENS[t];
     }
-    if (n < 1000) {
+    if (n < MAX_TOKEN_NUMBER) {
       const hundreds = Math.floor(n / 100);
       const rest = n % 100;
       const hundredPart = hundreds === 1 ? 'سو' : `${URDU_ONES[hundreds]} سو`;

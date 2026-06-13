@@ -8,14 +8,16 @@
   <link rel="stylesheet" href="/shared/hospital-theme.css" />
   <style>
     html, body {
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       background: var(--navy);
+      min-height: 100%;
     }
 
     .display {
       display: grid;
-      grid-template-rows: auto auto 1fr auto auto;
-      height: 100vh;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      min-height: 100dvh;
       background:
         radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 121, 107, 0.18) 0%, transparent 55%),
         radial-gradient(ellipse 60% 40% at 100% 100%, rgba(21, 101, 192, 0.12) 0%, transparent 50%),
@@ -45,8 +47,8 @@
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.9fr);
       align-items: center;
-      gap: 24px;
-      padding: 18px 36px 20px;
+      gap: clamp(12px, 2vw, 24px);
+      padding: clamp(12px, 2vw, 18px) clamp(16px, 3vw, 36px) clamp(14px, 2vw, 20px);
       background: rgba(255, 255, 255, 0.05);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(8px);
@@ -60,8 +62,8 @@
     }
 
     .brand-mark {
-      width: 62px;
-      height: 62px;
+      width: clamp(48px, 8vw, 62px);
+      height: clamp(48px, 8vw, 62px);
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.16);
@@ -73,7 +75,7 @@
 
     .brand-mark svg { display: block; }
 
-    .brand-text { min-width: 0; }
+    .brand-text { min-width: 0; word-wrap: break-word; }
 
     .brand-text h1 {
       font-size: clamp(1.05rem, 1.9vw, 1.5rem);
@@ -97,7 +99,7 @@
     }
 
     .service-tag {
-      font-size: 0.62rem;
+      font-size: clamp(0.58rem, 1.5vw, 0.62rem);
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -133,8 +135,10 @@
 
     .header-center .queue-sub {
       margin-top: 6px;
-      font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+      font-size: clamp(0.85rem, 1.6vw, 1.12rem);
       color: rgba(255, 255, 255, 0.85);
+      line-height: 1.45;
+      word-wrap: break-word;
     }
 
     .header-time {
@@ -188,10 +192,14 @@
     /* Room grid */
     .rooms-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      padding: 22px 36px 26px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: minmax(0, 1fr);
+      gap: clamp(14px, 2vw, 28px);
+      padding: clamp(14px, 2vh, 24px) clamp(16px, 3vw, 36px) clamp(12px, 1.8vh, 20px);
       min-height: 0;
+      height: 100%;
+      align-items: stretch;
+      align-content: stretch;
     }
 
     .room-card {
@@ -203,6 +211,10 @@
       border: 3px solid transparent;
       transition: border-color 0.4s, transform 0.35s;
       position: relative;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      container-type: inline-size;
     }
 
     .room-card.active {
@@ -237,11 +249,16 @@
 
     .room-card-header {
       display: flex;
-      align-items: flex-start;
+      flex-wrap: nowrap;
+      align-items: stretch;
       justify-content: space-between;
       gap: 12px;
-      padding: 16px 22px;
+      padding: clamp(14px, 2vh, 20px) clamp(16px, 2.5vw, 24px);
+      padding-bottom: clamp(14px, 2vh, 18px);
       border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      position: relative;
+      min-height: clamp(88px, 14vh, 120px);
     }
 
     .room-card.r1 .room-card-header { background: var(--teal-light); }
@@ -250,13 +267,40 @@
     .room-id-block {
       display: flex;
       align-items: flex-start;
-      gap: 14px;
+      gap: clamp(10px, 2vw, 14px);
+      flex: 1 1 auto;
       min-width: 0;
+      align-self: flex-start;
+    }
+
+    .room-header-aside {
+      flex: 0 1 46%;
+      max-width: 46%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 0;
+      min-height: 100%;
+      padding-top: 4px;
+      padding-right: 4px;
+      padding-left: 12px;
+    }
+
+    .room-header-urdu {
+      font-size: clamp(0.72rem, 3cqw, 0.9rem);
+      color: var(--text-muted);
+      line-height: 1.45;
+      text-align: right;
+      max-width: 100%;
+      word-wrap: break-word;
+      margin-top: auto;
     }
 
     .room-icon {
-      width: 52px;
-      height: 52px;
+      width: clamp(42px, 8cqw, 52px);
+      height: clamp(42px, 8cqw, 52px);
       border-radius: 14px;
       display: flex;
       align-items: center;
@@ -272,23 +316,26 @@
 
     .room-no-tag {
       display: inline-block;
-      font-size: clamp(1.2rem, 2.4vw, 1.65rem);
+      font-size: clamp(1.05rem, min(4.5cqw, 3.2vh), 1.85rem);
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-muted);
       margin-bottom: 6px;
+      word-wrap: break-word;
     }
 
     .room-card.active.r1 .room-no-tag { color: var(--teal); }
     .room-card.active.r2 .room-no-tag { color: var(--blue); }
 
     .room-title {
-      font-size: clamp(1rem, 1.7vw, 1.2rem);
+      font-size: clamp(0.95rem, min(2.5cqw, 2.2vh), 1.35rem);
       font-weight: 800;
       color: var(--navy);
       letter-spacing: -0.01em;
       line-height: 1.25;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
     }
 
     .room-desc,
@@ -307,12 +354,6 @@
     .room-card.active.r1 .room-doctor { color: var(--teal); }
     .room-card.active.r2 .room-doctor { color: var(--blue); }
 
-    .room-sub {
-      font-size: clamp(0.82rem, 1.2vw, 0.92rem);
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
     .room-status-pill {
       font-size: 0.62rem;
       font-weight: 700;
@@ -324,30 +365,28 @@
       color: var(--text-muted);
       border: 1px solid var(--border);
       flex-shrink: 0;
-      margin-top: 2px;
+      margin-bottom: auto;
+      align-self: flex-end;
     }
 
     .room-card.active .room-status-pill {
-      color: #fff;
-      border-color: transparent;
+      display: none;
     }
 
-    .room-card.active.r1 .room-status-pill { background: var(--teal); }
-    .room-card.active.r2 .room-status-pill { background: var(--blue); }
-
     .room-card-body {
-      flex: 1;
+      flex: 1 1 auto;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px 24px 28px;
-      gap: 6px;
+      padding: clamp(14px, 2.5vh, 28px) clamp(16px, 2.5vw, 28px);
+      gap: clamp(6px, 1.5vh, 12px);
       position: relative;
+      min-height: 0;
     }
 
     .serving-label {
-      font-size: clamp(0.72rem, 1.1vw, 0.85rem);
+      font-size: clamp(0.72rem, min(1.1vw, 1.8vh), 1rem);
       font-weight: 700;
       letter-spacing: 0.2em;
       text-transform: uppercase;
@@ -361,13 +400,16 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 4px 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      margin: clamp(4px, 1vh, 10px) 0;
     }
 
     .token-ring {
       position: absolute;
-      width: clamp(9rem, 18vw, 14rem);
-      height: clamp(9rem, 18vw, 14rem);
+      width: clamp(8rem, min(58cqw, 42vh), 18rem);
+      height: clamp(8rem, min(58cqw, 42vh), 18rem);
       border-radius: 50%;
       border: 3px solid transparent;
       opacity: 0;
@@ -392,7 +434,7 @@
     }
 
     .token-display {
-      font-size: clamp(6.5rem, 15vw, 12rem);
+      font-size: clamp(4rem, min(24cqw, 22vh), 15rem);
       font-weight: 800;
       letter-spacing: -0.05em;
       line-height: 0.95;
@@ -401,6 +443,9 @@
       font-variant-numeric: tabular-nums;
       position: relative;
       z-index: 1;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .room-card.active.r1 .token-display { color: var(--teal); }
@@ -417,12 +462,15 @@
     }
 
     .proceed-label {
-      margin-top: 6px;
-      font-size: clamp(0.82rem, 1.3vw, 0.98rem);
+      margin-top: clamp(2px, 0.8vh, 8px);
+      font-size: clamp(0.82rem, min(2.5cqw, 2vh), 1.1rem);
       font-weight: 600;
       color: var(--text-muted);
       text-align: center;
-      max-width: 92%;
+      max-width: 96%;
+      line-height: 1.4;
+      word-wrap: break-word;
+      flex-shrink: 0;
     }
 
     .room-card.active .proceed-label { color: var(--text-secondary); }
@@ -445,118 +493,75 @@
       background: radial-gradient(ellipse at center 70%, var(--blue-glow) 0%, transparent 65%);
     }
 
-    /* Announcement */
-    .announce-strip {
-      margin: 0 36px;
-      background: var(--gold-light);
-      border: 1px solid rgba(184, 134, 11, 0.35);
-      border-radius: var(--radius-md);
+    /* Bottom travelling announcement */
+    .ticker-bar {
       display: flex;
-      align-items: stretch;
+      align-items: center;
+      margin: 0;
+      padding: 0 clamp(14px, 3vw, 28px);
+      min-height: clamp(44px, 6vh, 56px);
+      background: rgba(6, 16, 30, 0.98);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
       overflow: hidden;
-      min-height: 62px;
     }
 
-    .announce-label {
+    .ticker-label {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 4px;
-      padding: 0 18px;
-      background: rgba(184, 134, 11, 0.12);
-      border-right: 1px solid rgba(184, 134, 11, 0.25);
+      gap: 10px;
+      flex-shrink: 0;
+      padding-right: clamp(12px, 2vw, 16px);
+      color: rgba(186, 200, 224, 0.92);
+      font-size: clamp(0.6rem, 1.2vw, 0.72rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .ticker-label svg {
+      flex-shrink: 0;
+      opacity: 0.9;
+    }
+
+    .ticker-divider {
+      width: 1px;
+      align-self: stretch;
+      margin: clamp(8px, 1.5vh, 12px) clamp(12px, 2vw, 16px) clamp(8px, 1.5vh, 12px) 0;
+      background: rgba(186, 200, 224, 0.28);
       flex-shrink: 0;
     }
 
-    .announce-label span {
-      font-size: 0.68rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--gold);
-      white-space: nowrap;
-    }
-
-    .announce-label .urdu {
-      font-size: 0.78rem;
-      color: var(--gold);
-      opacity: 0.85;
-      letter-spacing: 0;
-      text-transform: none;
-    }
-
-    .marquee-viewport {
+    .ticker-viewport {
       flex: 1;
       overflow: hidden;
-      display: flex;
-      align-items: center;
+      min-width: 0;
       position: relative;
     }
 
-    .marquee-track {
-      display: flex;
+    .ticker-track {
+      display: inline-flex;
       white-space: nowrap;
       will-change: transform;
     }
 
-    .marquee-track.animate {
-      animation: marqueeScroll 22s linear infinite;
+    .ticker-track.animate {
+      animation: tickerScroll var(--ticker-duration, 28s) linear infinite;
     }
 
-    .marquee-track span {
-      padding: 0 48px;
-      font-size: clamp(0.95rem, 1.5vw, 1.1rem);
-      font-weight: 600;
-      color: var(--navy);
+    .ticker-track.animate span {
+      padding-right: var(--ticker-gap, 50vw);
     }
 
-    .announce-empty {
-      padding: 0 24px;
-      font-size: 0.92rem;
-      color: var(--text-muted);
-      font-style: italic;
+    .ticker-track span {
+      font-size: clamp(0.82rem, 1.4vw, 1rem);
+      font-weight: 500;
+      color: rgba(200, 214, 234, 0.9);
+      letter-spacing: 0.01em;
     }
 
-    @keyframes marqueeScroll {
+    @keyframes tickerScroll {
       0% { transform: translateX(0); }
       100% { transform: translateX(-50%); }
-    }
-
-    /* Footer */
-    .display-footer {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 20px;
-      padding: 12px 36px 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .footer-msg {
-      font-size: clamp(0.76rem, 1.15vw, 0.9rem);
-      color: rgba(255, 255, 255, 0.55);
-    }
-
-    .footer-msg strong {
-      color: rgba(255, 255, 255, 0.82);
-      font-weight: 600;
-    }
-
-    .footer-brand {
-      text-align: center;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.35);
-      white-space: nowrap;
-    }
-
-    .footer-urdu {
-      text-align: right;
-      color: rgba(255, 255, 255, 0.65);
-      font-size: clamp(0.82rem, 1.25vw, 0.98rem);
     }
 
     .header-badges {
@@ -596,7 +601,9 @@
 
     .speaker-wrap {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
+      justify-content: flex-end;
       gap: 8px;
       margin-top: 4px;
     }
@@ -674,7 +681,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 32px;
+      padding: clamp(16px, 4vw, 32px);
+      overflow-y: auto;
     }
 
     .audio-unlock[hidden] { display: none; }
@@ -684,14 +692,14 @@
       width: 100%;
       background: var(--surface);
       border-radius: var(--radius-lg);
-      padding: 40px 36px;
+      padding: clamp(24px, 5vw, 40px) clamp(20px, 4vw, 36px);
       text-align: center;
       border: 2px solid var(--teal);
     }
 
     .audio-unlock-icon {
-      width: 64px;
-      height: 64px;
+      width: clamp(52px, 12vw, 64px);
+      height: clamp(52px, 12vw, 64px);
       margin: 0 auto 20px;
       border-radius: 50%;
       background: var(--teal-light);
@@ -701,7 +709,7 @@
     }
 
     .audio-unlock-card h2 {
-      font-size: 1.35rem;
+      font-size: clamp(1.1rem, 4vw, 1.35rem);
       font-weight: 800;
       color: var(--navy);
       margin-bottom: 10px;
@@ -709,7 +717,7 @@
 
     .audio-unlock-card p {
       color: var(--text-secondary);
-      font-size: 0.95rem;
+      font-size: clamp(0.88rem, 2.5vw, 0.95rem);
       line-height: 1.5;
       margin-bottom: 8px;
     }
@@ -741,6 +749,43 @@
       color: var(--text-muted);
     }
 
+    @container (max-width: 480px) {
+      .room-header-aside {
+        flex: 1 1 100%;
+        padding-left: clamp(52px, 14cqw, 66px);
+      }
+
+      .room-header-urdu {
+        font-size: clamp(0.72rem, 3.5cqw, 0.85rem);
+      }
+    }
+
+    @media (min-width: 961px) and (min-height: 600px) {
+      .display {
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow: hidden;
+      }
+
+      html:has(.display),
+      body:has(.display) {
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      .rooms-grid {
+        overflow: hidden;
+      }
+    }
+
+    @media (max-width: 1200px) and (min-width: 961px) {
+      .room-header-aside {
+        flex: 1 1 100%;
+        max-width: 100%;
+        padding-left: clamp(52px, 6vw, 66px);
+      }
+    }
+
     @media (max-width: 960px) {
       .display-header {
         grid-template-columns: 1fr;
@@ -753,24 +798,81 @@
       .header-time { text-align: center; }
       .header-badges { align-items: center; }
       .service-tags { justify-content: center; }
+      .speaker-wrap { justify-content: center; }
 
       .rooms-grid {
         grid-template-columns: 1fr;
-        padding: 16px 20px;
-        gap: 16px;
-        overflow-y: auto;
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+        padding: 12px 16px;
+        gap: 12px;
+      }
+    }
+
+    @media (min-width: 641px) {
+      .ticker-label .urdu {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .ticker-bar {
+        padding: 0 12px;
       }
 
-      .display { overflow-y: auto; }
-      html, body { overflow: auto; }
-
-      .announce-strip { margin: 0 20px; }
-      .display-footer {
-        grid-template-columns: 1fr;
-        text-align: center;
-        padding: 12px 20px 16px;
+      .ticker-divider {
+        margin-right: 10px;
       }
-      .footer-urdu { text-align: center; }
+
+      .ticker-label span:not(.urdu) {
+        display: none;
+      }
+
+      .ticker-label .urdu {
+        font-size: 0.82rem;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .room-card.active {
+        transform: none;
+      }
+
+      .header-center .queue-sub {
+        font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+        line-height: 1.45;
+      }
+    }
+
+    @media (max-height: 720px) {
+      .room-card-body {
+        padding-top: 10px;
+        padding-bottom: 12px;
+        gap: 4px;
+      }
+
+      .token-display {
+        font-size: clamp(2.8rem, min(20cqw, 16vh), 7rem);
+      }
+
+      .token-ring {
+        width: clamp(5.5rem, min(45cqw, 32vh), 10rem);
+        height: clamp(5.5rem, min(45cqw, 32vh), 10rem);
+      }
+
+      .display-header {
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
+      .rooms-grid {
+        padding-top: 8px;
+        padding-bottom: 8px;
+        gap: 10px;
+      }
+
+      .ticker-bar {
+        min-height: 42px;
+      }
     }
   </style>
 </head>
@@ -844,10 +946,12 @@
               <div class="room-no-tag">Room no 1</div>
               <div class="room-title">Consultation</div>
               <div class="room-doctor">Dr. Zahid Chaudhry</div>
-              <div class="room-sub urdu">مشاورت — ڈاکٹر زاہد چوہدری</div>
             </div>
           </div>
-          <div class="room-status-pill" id="status-room1">Waiting</div>
+          <div class="room-header-aside">
+            <div class="room-header-urdu urdu">مشاورت — ڈاکٹر زاہد چوہدری</div>
+            <div class="room-status-pill" id="status-room1">Waiting</div>
+          </div>
         </div>
         <div class="room-card-body">
           <div class="room-card-glow"></div>
@@ -875,10 +979,12 @@
             <div class="room-meta">
               <div class="room-no-tag">Room no 2</div>
               <div class="room-title">Basic eye Checkup and Counseling room</div>
-              <div class="room-sub urdu">بنیادی آنکھ کا معائنہ اور مشاورت کا کمرہ</div>
             </div>
           </div>
-          <div class="room-status-pill" id="status-room2">Waiting</div>
+          <div class="room-header-aside">
+            <div class="room-header-urdu urdu">بنیادی آنکھ کا معائنہ اور مشاورت کا کمرہ</div>
+            <div class="room-status-pill" id="status-room2">Waiting</div>
+          </div>
         </div>
         <div class="room-card-body">
           <div class="room-card-glow"></div>
@@ -893,29 +999,18 @@
       </article>
     </div>
 
-    <div class="announce-strip" id="announce-bar">
-      <div class="announce-label">
+    <div class="ticker-bar" id="announce-bar" aria-live="polite">
+      <div class="ticker-label">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 10v4h4l5 4V6L8 10H4z" fill="#b8860b"/>
-          <path d="M16 8.5a5 5 0 010 7M18.5 6a8 8 0 010 12" stroke="#b8860b" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M4 10v4h4l5 4V6L8 10H4z" fill="currentColor"/>
+          <path d="M16 8.5a5 5 0 010 7M18.5 6a8 8 0 010 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        <span>Notice</span>
+        <span>Announcement</span>
         <span class="urdu">اعلان</span>
       </div>
-      <div class="marquee-viewport">
-        <span class="announce-empty" id="announce-text">No announcements at this time</span>
-      </div>
+      <div class="ticker-divider" aria-hidden="true"></div>
+      <div class="ticker-viewport" id="ticker-viewport"></div>
     </div>
-
-    <footer class="display-footer">
-      <div class="footer-msg">
-        <strong>Please remain seated</strong> until your token number is displayed and announced.
-      </div>
-      <div class="footer-brand">Zahid clinic Eye & Dental</div>
-      <div class="footer-msg footer-urdu urdu">
-        براہ کرم بیٹھے رہیں — جب تک آپ کا نمبر نہ بلایا جائے
-      </div>
-    </footer>
   </div>
 
   <div class="audio-unlock" id="audioUnlock">
@@ -980,6 +1075,7 @@
       if (token !== null) {
         cardEl.classList.add('active');
         statusEl.textContent = 'Calling';
+        statusEl.setAttribute('aria-hidden', 'true');
         if (servingEl) servingEl.textContent = 'Now Calling';
         const urduEl = document.getElementById(`urdu-${roomKey}`);
         if (urduEl && window.TokenAnnouncer) {
@@ -994,6 +1090,7 @@
       } else {
         cardEl.classList.remove('active');
         statusEl.textContent = 'Waiting';
+        statusEl.removeAttribute('aria-hidden');
         if (servingEl) servingEl.textContent = 'Now Serving';
         const urduEl = document.getElementById(`urdu-${roomKey}`);
         if (urduEl) {
@@ -1004,17 +1101,31 @@
       }
     }
 
+    const DEFAULT_TICKER = 'Please keep your token slip ready';
+    let lastAnnouncement = '';
+
     function updateAnnouncement(text) {
-      const viewport = document.querySelector('.marquee-viewport');
-      if (text && text.trim()) {
-        const needsScroll = text.length > 50;
-        viewport.innerHTML = needsScroll
-          ? `<div class="marquee-track animate"><span>${escapeHtml(text)}</span><span aria-hidden="true">${escapeHtml(text)}</span></div>`
-          : `<div class="marquee-track"><span>${escapeHtml(text)}</span></div>`;
-      } else {
-        viewport.innerHTML = '<span class="announce-empty" id="announce-text">No announcements at this time</span>';
-      }
+      lastAnnouncement = text || '';
+      renderTicker();
     }
+
+    function renderTicker() {
+      const viewport = document.getElementById('ticker-viewport');
+      const msg = lastAnnouncement.trim() ? lastAnnouncement.trim() : DEFAULT_TICKER;
+      const safe = escapeHtml(msg);
+      const duration = Math.max(14, Math.min(48, msg.length * 0.35 + 12));
+      const gap = Math.max(viewport.clientWidth, 280);
+
+      viewport.style.setProperty('--ticker-duration', `${duration}s`);
+      viewport.style.setProperty('--ticker-gap', `${gap}px`);
+      viewport.innerHTML =
+        `<div class="ticker-track animate">` +
+        `<span>${safe}</span><span aria-hidden="true">${safe}</span>` +
+        `</div>`;
+    }
+
+    window.addEventListener('resize', renderTicker);
+    updateAnnouncement('');
 
     function escapeHtml(str) {
       const d = document.createElement('div');
