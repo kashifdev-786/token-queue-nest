@@ -10,18 +10,33 @@
     html, body {
       overflow-x: hidden;
       overflow-y: auto;
-      background: var(--navy);
+      background: #0a1628;
       min-height: 100%;
     }
 
     .display {
+      --cyan: #38bdf8;
+      --cyan-light: #e0f2fe;
+      --cyan-glow: rgba(56, 189, 248, 0.32);
+      --red: #ef4444;
+      --red-deep: #dc2626;
+      --red-light: #fee2e2;
+      --red-glow: rgba(239, 68, 68, 0.32);
+      --teal: #38bdf8;
+      --teal-light: #e0f2fe;
+      --teal-glow: rgba(56, 189, 248, 0.32);
+      --blue: #3b82f6;
+      --blue-deep: #2563eb;
+      --blue-light: #dbeafe;
+      --blue-glow: rgba(59, 130, 246, 0.32);
       display: grid;
       grid-template-rows: auto auto minmax(0, 1fr) auto;
       min-height: 100dvh;
       background:
-        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 121, 107, 0.18) 0%, transparent 55%),
-        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(21, 101, 192, 0.12) 0%, transparent 50%),
-        linear-gradient(180deg, var(--navy) 0%, #061525 100%);
+        radial-gradient(ellipse 85% 55% at 15% -15%, rgba(56, 189, 248, 0.32) 0%, transparent 52%),
+        radial-gradient(ellipse 75% 50% at 85% 105%, rgba(37, 99, 235, 0.28) 0%, transparent 52%),
+        radial-gradient(ellipse 60% 45% at 50% 40%, rgba(99, 102, 241, 0.14) 0%, transparent 58%),
+        linear-gradient(180deg, #0f2a4a 0%, #0c1f3d 48%, #081528 100%);
       position: relative;
     }
 
@@ -38,8 +53,8 @@
     .display > * { position: relative; z-index: 1; }
 
     .header-accent {
-      height: 4px;
-      background: linear-gradient(90deg, var(--teal) 0%, var(--teal) 45%, var(--blue) 55%, var(--blue) 100%);
+      height: 5px;
+      background: linear-gradient(90deg, #7dd3fc 0%, #38bdf8 30%, #3b82f6 70%, #6366f1 100%);
     }
 
     /* Header */
@@ -49,9 +64,9 @@
       align-items: center;
       gap: clamp(12px, 2vw, 24px);
       padding: clamp(12px, 2vw, 18px) clamp(16px, 3vw, 36px) clamp(14px, 2vw, 20px);
-      background: rgba(255, 255, 255, 0.05);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(8px);
+      background: rgba(30, 58, 110, 0.35);
+      border-bottom: 1px solid rgba(147, 197, 253, 0.18);
+      backdrop-filter: blur(10px);
     }
 
     .brand {
@@ -65,8 +80,8 @@
       width: clamp(48px, 8vw, 62px);
       height: clamp(48px, 8vw, 62px);
       border-radius: 16px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(59, 130, 246, 0.18);
+      border: 1px solid rgba(147, 197, 253, 0.35);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -109,15 +124,15 @@
     }
 
     .service-tag.eye {
-      color: #80cbc4;
-      background: rgba(0, 121, 107, 0.2);
-      border-color: rgba(0, 121, 107, 0.35);
+      color: #bae6fd;
+      background: rgba(56, 189, 248, 0.28);
+      border-color: rgba(125, 211, 252, 0.45);
     }
 
     .service-tag.dental {
-      color: #90caf9;
-      background: rgba(21, 101, 192, 0.2);
-      border-color: rgba(21, 101, 192, 0.35);
+      color: #bfdbfe;
+      background: rgba(59, 130, 246, 0.28);
+      border-color: rgba(147, 197, 253, 0.45);
     }
 
     .header-center {
@@ -130,13 +145,13 @@
       font-weight: 700;
       letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.5);
+      color: rgba(186, 230, 253, 0.75);
     }
 
     .header-center .queue-sub {
       margin-top: 6px;
       font-size: clamp(0.85rem, 1.6vw, 1.12rem);
-      color: rgba(255, 255, 255, 0.85);
+      color: rgba(219, 234, 254, 0.92);
       line-height: 1.45;
       word-wrap: break-word;
     }
@@ -170,14 +185,14 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #81c784;
+      color: #7dd3fc;
     }
 
     .live-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #66bb6a;
+      background: #38bdf8;
       animation: livePulse 2s ease-in-out infinite;
     }
 
@@ -208,8 +223,9 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      border: 3px solid transparent;
-      transition: border-color 0.4s, transform 0.35s;
+      border: 2px solid var(--border);
+      box-shadow: 0 8px 32px rgba(30, 64, 120, 0.14);
+      transition: border-color 0.4s, transform 0.35s, box-shadow 0.4s;
       position: relative;
       min-width: 0;
       min-height: 0;
@@ -218,105 +234,163 @@
     }
 
     .room-card.active {
-      transform: translateY(-2px);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 44px rgba(37, 99, 235, 0.22);
     }
 
-    .room-card.active.r1 { border-color: var(--teal); }
-    .room-card.active.r2 { border-color: var(--blue); }
+    .room-card.active.r1 { border-color: #ef4444; }
+    .room-card.active.r2 { border-color: #3b82f6; }
+
+    .room-card.r1 { border-color: rgba(239, 68, 68, 0.4); }
+    .room-card.r2 { border-color: rgba(59, 130, 246, 0.4); }
 
     .room-ribbon {
       position: absolute;
-      top: 14px;
-      right: -32px;
-      z-index: 2;
-      width: 140px;
-      padding: 6px 0;
+      top: 16px;
+      right: -34px;
+      z-index: 3;
+      width: 148px;
+      padding: 7px 0;
       text-align: center;
-      font-size: 0.62rem;
+      font-size: 0.64rem;
       font-weight: 800;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       color: #fff;
       transform: rotate(32deg);
       opacity: 0;
       transition: opacity 0.35s;
       pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
     .room-card.active .room-ribbon { opacity: 1; }
-    .room-card.active.r1 .room-ribbon { background: var(--teal); }
-    .room-card.active.r2 .room-ribbon { background: var(--blue); }
+    .room-card.active.r1 .room-ribbon { background: linear-gradient(135deg, #fca5a5, #ef4444); }
+    .room-card.active.r2 .room-ribbon { background: linear-gradient(135deg, #60a5fa, #2563eb); }
 
     .room-card-header {
       display: flex;
-      flex-wrap: nowrap;
+      flex-direction: column;
       align-items: stretch;
-      justify-content: space-between;
-      gap: 12px;
-      padding: clamp(14px, 2vh, 20px) clamp(16px, 2.5vw, 24px);
-      padding-bottom: clamp(14px, 2vh, 18px);
+      gap: clamp(10px, 1.6vh, 14px);
+      padding: clamp(22px, 3.2vh, 30px) clamp(18px, 2.8vw, 26px) clamp(18px, 2.6vh, 24px);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
       position: relative;
-      min-height: clamp(88px, 14vh, 120px);
+      min-height: clamp(178px, 26vh, 228px);
     }
 
-    .room-card.r1 .room-card-header { background: var(--teal-light); }
-    .room-card.r2 .room-card-header { background: var(--blue-light); }
+    .room-card.r1 .room-card-header {
+      background: linear-gradient(165deg, #fef2f2 0%, #fecaca 45%, #fca5a5 100%);
+    }
 
-    .room-id-block {
-      display: flex;
-      align-items: flex-start;
+    .room-card.r2 .room-card-header {
+      background: linear-gradient(165deg, #dbeafe 0%, #93c5fd 45%, #60a5fa 100%);
+    }
+
+    .room-card.active.r1 .room-card-header {
+      background: linear-gradient(165deg, #fecaca 0%, #f87171 50%, #ef4444 100%);
+    }
+
+    .room-card.active.r2 .room-card-header {
+      background: linear-gradient(165deg, #93c5fd 0%, #60a5fa 50%, #3b82f6 100%);
+    }
+
+    .room-no-banner {
+      text-align: center;
+      width: 100%;
+      font-size: clamp(2.35rem, min(14.5cqw, 12vh), 4.1rem);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1.08;
+      flex-shrink: 0;
+      margin-bottom: clamp(2px, 0.4vh, 4px);
+    }
+
+    .room-header-divider {
+      height: 3px;
+      width: min(72%, 280px);
+      margin: clamp(4px, 0.8vh, 8px) auto 0;
+      border-radius: 999px;
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+
+    .room-card.r1 .room-no-banner { color: #dc2626; }
+    .room-card.r2 .room-no-banner { color: #1d4ed8; }
+
+    .room-card.active.r1 .room-no-banner { color: #991b1b; }
+    .room-card.active.r2 .room-no-banner { color: #1e3a8a; }
+
+    .room-card.r1 .room-header-divider {
+      background: linear-gradient(90deg, transparent, #ef4444, transparent);
+    }
+
+    .room-card.r2 .room-header-divider {
+      background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+    }
+
+    .room-header-info {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       gap: clamp(10px, 2vw, 14px);
-      flex: 1 1 auto;
+      align-items: center;
       min-width: 0;
-      align-self: flex-start;
+      padding-top: 2px;
     }
 
-    .room-header-aside {
-      flex: 0 1 46%;
-      max-width: 46%;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      justify-content: flex-end;
-      gap: 8px;
+    .room-header-text {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: clamp(4px, 0.6vh, 6px);
       min-width: 0;
-      min-height: 100%;
-      padding-top: 4px;
-      padding-right: 4px;
-      padding-left: 12px;
     }
 
     .room-header-urdu {
-      font-size: clamp(0.72rem, 3cqw, 0.9rem);
-      color: var(--text-muted);
-      line-height: 1.45;
+      font-size: clamp(0.78rem, 2.6cqw, 0.95rem);
+      line-height: 1.55;
       text-align: right;
-      max-width: 100%;
-      word-wrap: break-word;
-      margin-top: auto;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 4px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      min-width: 0;
     }
 
+    .room-card.r1 .room-header-urdu { color: #b91c1c; }
+    .room-card.r2 .room-header-urdu { color: #1d4ed8; }
+
     .room-icon {
-      width: clamp(42px, 8cqw, 52px);
-      height: clamp(42px, 8cqw, 52px);
-      border-radius: 14px;
+      width: clamp(50px, 9.5cqw, 60px);
+      height: clamp(50px, 9.5cqw, 60px);
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.35);
     }
 
-    .room-card.r1 .room-icon { background: var(--teal); }
-    .room-card.r2 .room-icon { background: var(--blue); }
+    .room-card.r1 .room-icon {
+      background: linear-gradient(145deg, #fca5a5, #dc2626);
+      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.45);
+    }
+
+    .room-card.r2 .room-icon {
+      background: linear-gradient(145deg, #60a5fa, #2563eb);
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.45);
+    }
 
     .room-meta { min-width: 0; }
 
     .room-no-tag {
       display: inline-block;
-      font-size: clamp(1.05rem, min(4.5cqw, 3.2vh), 1.85rem);
+      font-size: clamp(1.25rem, min(5.5cqw, 3.8vh), 2.15rem);
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -325,17 +399,20 @@
       word-wrap: break-word;
     }
 
-    .room-card.active.r1 .room-no-tag { color: var(--teal); }
+    .room-card.active.r1 .room-no-tag { color: var(--red); }
     .room-card.active.r2 .room-no-tag { color: var(--blue); }
 
-    .room-title {
-      font-size: clamp(0.95rem, min(2.5cqw, 2.2vh), 1.35rem);
+    .room-title,
+    .room-subtitle {
+      font-size: clamp(0.88rem, min(2.5cqw, 2.2vh), 1.38rem);
       font-weight: 800;
       color: var(--navy);
       letter-spacing: -0.01em;
-      line-height: 1.25;
-      word-wrap: break-word;
-      overflow-wrap: anywhere;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
     }
 
     .room-desc,
@@ -351,23 +428,26 @@
       color: var(--navy-soft);
     }
 
-    .room-card.active.r1 .room-doctor { color: var(--teal); }
+    .room-card.active.r1 .room-doctor { color: var(--red); }
     .room-card.active.r2 .room-doctor { color: var(--blue); }
 
     .room-status-pill {
-      font-size: 0.62rem;
+      align-self: start;
+      font-size: 0.6rem;
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding: 6px 12px;
+      padding: 7px 13px;
       border-radius: 999px;
-      background: var(--surface-muted);
+      background: rgba(255, 255, 255, 0.72);
       color: var(--text-muted);
       border: 1px solid var(--border);
       flex-shrink: 0;
-      margin-bottom: auto;
-      align-self: flex-end;
+      white-space: nowrap;
     }
+
+    .room-card.r1 .room-status-pill { color: #dc2626; border-color: rgba(239, 68, 68, 0.45); background: rgba(255, 255, 255, 0.88); }
+    .room-card.r2 .room-status-pill { color: #1d4ed8; border-color: rgba(59, 130, 246, 0.45); background: rgba(255, 255, 255, 0.88); }
 
     .room-card.active .room-status-pill {
       display: none;
@@ -379,68 +459,102 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: clamp(14px, 2.5vh, 28px) clamp(16px, 2.5vw, 28px);
-      gap: clamp(6px, 1.5vh, 12px);
+      padding: clamp(16px, 2.8vh, 32px) clamp(16px, 2.5vw, 28px);
+      gap: clamp(10px, 2vh, 18px);
       position: relative;
       min-height: 0;
+      background: #ffffff;
+    }
+
+    .room-card.active.r1 .room-card-body { background: #ffffff; }
+    .room-card.active.r2 .room-card-body { background: #ffffff; }
+
+    .token-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(16px, 2.8vh, 24px);
+      width: 100%;
+      flex-shrink: 0;
     }
 
     .serving-label {
-      font-size: clamp(0.72rem, min(1.1vw, 1.8vh), 1rem);
+      font-size: clamp(0.68rem, min(1vw, 1.6vh), 0.92rem);
       font-weight: 700;
-      letter-spacing: 0.2em;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--text-muted);
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2;
+      line-height: 1.2;
     }
 
-    .room-card.active .serving-label { color: var(--text-secondary); }
+    .room-card.active .serving-label {
+      color: #fff;
+      border-color: transparent;
+      letter-spacing: 0.18em;
+    }
+
+    .room-card.active.r1 .serving-label { background: linear-gradient(135deg, #fca5a5, #dc2626); }
+    .room-card.active.r2 .serving-label { background: linear-gradient(135deg, #60a5fa, #2563eb); }
 
     .token-wrap {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex: 1 1 auto;
-      min-height: 0;
-      width: 100%;
-      margin: clamp(4px, 1vh, 10px) 0;
-      padding: 0 clamp(10px, 3cqw, 20px);
+      flex: 0 0 auto;
+      width: clamp(5.5rem, min(30cqw, 24vh), 9.5rem);
+      height: clamp(5.5rem, min(30cqw, 24vh), 9.5rem);
+      max-width: 88%;
+      margin: 0;
+      padding: 0;
       overflow: visible;
     }
 
     .token-ring {
       position: absolute;
-      width: clamp(8rem, min(58cqw, 42vh), 18rem);
-      height: clamp(8rem, min(58cqw, 42vh), 18rem);
+      inset: 0;
+      width: 100%;
+      height: 100%;
       border-radius: 50%;
-      border: 3px solid transparent;
-      opacity: 0;
-      transition: opacity 0.35s;
+      border: 2px solid rgba(148, 180, 210, 0.5);
+      opacity: 1;
+      transition: border-color 0.35s;
+      transform-origin: center center;
     }
 
+    .room-card.r1 .token-ring { border-color: rgba(239, 68, 68, 0.4); }
+    .room-card.r2 .token-ring { border-color: rgba(59, 130, 246, 0.4); }
+
     .room-card.active.r1 .token-ring {
-      opacity: 1;
-      border-color: rgba(0, 121, 107, 0.25);
+      border-width: 3px;
+      border-color: rgba(252, 165, 165, 0.75);
       animation: tokenRingPulse 2.4s ease-in-out infinite;
     }
 
     .room-card.active.r2 .token-ring {
-      opacity: 1;
-      border-color: rgba(21, 101, 192, 0.25);
+      border-width: 3px;
+      border-color: rgba(147, 197, 253, 0.8);
       animation: tokenRingPulse 2.4s ease-in-out infinite;
     }
 
     @keyframes tokenRingPulse {
       0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.06); opacity: 0.65; }
+      50% { transform: scale(1.04); opacity: 0.75; }
     }
 
     .token-display {
-      font-size: clamp(4rem, min(22cqw, 20vh), 14rem);
+      font-size: clamp(2.2rem, min(12cqw, 10vh), 4.75rem);
       font-weight: 800;
       letter-spacing: -0.02em;
       line-height: 1;
-      color: #c5d0dc;
+      color: #94a8bc;
       transition: color 0.35s, transform 0.35s;
       font-variant-numeric: tabular-nums;
       position: relative;
@@ -452,8 +566,11 @@
       word-break: keep-all;
     }
 
-    .room-card.active.r1 .token-display { color: var(--teal); }
-    .room-card.active.r2 .token-display { color: var(--blue); }
+    .room-card.r1 .token-display { color: #fca5a5; }
+    .room-card.r2 .token-display { color: #93c5fd; }
+
+    .room-card.active.r1 .token-display { color: #dc2626; }
+    .room-card.active.r2 .token-display { color: #1d4ed8; }
 
     .token-display.flash {
       animation: tokenFlash 0.65s ease;
@@ -466,8 +583,8 @@
     }
 
     .proceed-label {
-      margin-top: clamp(2px, 0.8vh, 8px);
-      font-size: clamp(0.82rem, min(2.5cqw, 2vh), 1.1rem);
+      margin-top: 0;
+      font-size: clamp(0.82rem, min(2.5cqw, 2vh), 1.05rem);
       font-weight: 600;
       color: var(--text-muted);
       text-align: center;
@@ -477,24 +594,36 @@
       flex-shrink: 0;
     }
 
+    .proceed-labels {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(6px, 1vh, 10px);
+      width: 100%;
+      flex-shrink: 0;
+    }
+
+    .proceed-label.urdu {
+      font-size: clamp(0.88rem, min(2.6cqw, 2.1vh), 1.12rem);
+      color: var(--text-secondary);
+      max-width: 98%;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+    }
+
     .room-card.active .proceed-label { color: var(--text-secondary); }
 
+    .room-card.active .proceed-label.urdu {
+      background: transparent;
+    }
+
+    .room-card.active.r1 .proceed-label.urdu { color: #b91c1c; }
+    .room-card.active.r2 .proceed-label.urdu { color: #1d4ed8; }
+
     .room-card-glow {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.4s;
-    }
-
-    .room-card.active.r1 .room-card-glow {
-      opacity: 1;
-      background: radial-gradient(ellipse at center 70%, var(--teal-glow) 0%, transparent 65%);
-    }
-
-    .room-card.active.r2 .room-card-glow {
-      opacity: 1;
-      background: radial-gradient(ellipse at center 70%, var(--blue-glow) 0%, transparent 65%);
+      display: none;
     }
 
     /* Bottom travelling announcement */
@@ -502,21 +631,21 @@
       display: flex;
       align-items: center;
       margin: 0;
-      padding: 0 clamp(14px, 3vw, 28px);
-      min-height: clamp(44px, 6vh, 56px);
-      background: rgba(6, 16, 30, 0.98);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: clamp(6px, 1vh, 10px) clamp(16px, 3.2vw, 32px);
+      min-height: clamp(52px, 7.5vh, 68px);
+      background: linear-gradient(180deg, rgba(12, 28, 58, 0.98) 0%, rgba(8, 20, 45, 0.99) 100%);
+      border-top: 1px solid rgba(147, 197, 253, 0.22);
       overflow: hidden;
     }
 
     .ticker-label {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-shrink: 0;
-      padding-right: clamp(12px, 2vw, 16px);
-      color: rgba(186, 200, 224, 0.92);
-      font-size: clamp(0.6rem, 1.2vw, 0.72rem);
+      padding-right: clamp(14px, 2.2vw, 18px);
+      color: rgba(191, 219, 254, 0.95);
+      font-size: clamp(0.72rem, 1.55vw, 0.92rem);
       font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
@@ -525,13 +654,15 @@
     .ticker-label svg {
       flex-shrink: 0;
       opacity: 0.9;
+      width: clamp(20px, 2.2vw, 24px);
+      height: clamp(20px, 2.2vw, 24px);
     }
 
     .ticker-divider {
       width: 1px;
       align-self: stretch;
       margin: clamp(8px, 1.5vh, 12px) clamp(12px, 2vw, 16px) clamp(8px, 1.5vh, 12px) 0;
-      background: rgba(186, 200, 224, 0.28);
+      background: rgba(147, 197, 253, 0.35);
       flex-shrink: 0;
     }
 
@@ -557,9 +688,9 @@
     }
 
     .ticker-track span {
-      font-size: clamp(0.82rem, 1.4vw, 1rem);
+      font-size: clamp(0.95rem, 1.75vw, 1.22rem);
       font-weight: 500;
-      color: rgba(200, 214, 234, 0.9);
+      color: rgba(219, 234, 254, 0.95);
       letter-spacing: 0.01em;
     }
 
@@ -803,14 +934,30 @@
       color: var(--text-muted);
     }
 
-    @container (max-width: 480px) {
-      .room-header-aside {
-        flex: 1 1 100%;
-        padding-left: clamp(52px, 14cqw, 66px);
+    @container (min-width: 400px) {
+      .room-header-text {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: center;
+        column-gap: clamp(8px, 2.5cqw, 16px);
+      }
+
+      .room-subtitle {
+        justify-self: start;
       }
 
       .room-header-urdu {
-        font-size: clamp(0.72rem, 3.5cqw, 0.85rem);
+        justify-self: end;
+        max-width: 100%;
+      }
+    }
+
+    @container (max-width: 480px) {
+      .room-header-urdu {
+        font-size: clamp(0.68rem, 3.2cqw, 0.82rem);
+      }
+
+      .room-subtitle {
+        font-size: clamp(0.72rem, 2.6cqw, 0.95rem);
       }
     }
 
@@ -833,10 +980,8 @@
     }
 
     @media (max-width: 1200px) and (min-width: 961px) {
-      .room-header-aside {
-        flex: 1 1 100%;
-        max-width: 100%;
-        padding-left: clamp(52px, 6vw, 66px);
+      .room-subtitle {
+        font-size: clamp(0.78rem, 1.8cqw, 1.1rem);
       }
     }
 
@@ -882,7 +1027,7 @@
       }
 
       .ticker-label .urdu {
-        font-size: 0.82rem;
+        font-size: 0.95rem;
         letter-spacing: 0;
         text-transform: none;
       }
@@ -904,13 +1049,33 @@
         gap: 4px;
       }
 
+      .token-wrap {
+        width: clamp(4.8rem, min(26cqw, 20vh), 8rem);
+        height: clamp(4.8rem, min(26cqw, 20vh), 8rem);
+      }
+
+      .token-stage {
+        gap: 12px;
+      }
+
       .token-display {
-        font-size: clamp(2.8rem, min(20cqw, 16vh), 7rem);
+        font-size: clamp(2rem, min(12cqw, 10vh), 4.5rem);
       }
 
       .token-ring {
-        width: clamp(5.5rem, min(45cqw, 32vh), 10rem);
-        height: clamp(5.5rem, min(45cqw, 32vh), 10rem);
+        width: auto;
+        height: auto;
+      }
+
+      .room-no-banner {
+        font-size: clamp(1.85rem, min(11cqw, 9vh), 3rem);
+      }
+
+      .room-card-header {
+        min-height: clamp(148px, 21vh, 180px);
+        gap: 10px;
+        padding-top: 16px;
+        padding-bottom: 14px;
       }
 
       .display-header {
@@ -925,7 +1090,7 @@
       }
 
       .ticker-bar {
-        min-height: 42px;
+        min-height: 48px;
       }
     }
   </style>
@@ -937,10 +1102,10 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <ellipse cx="12" cy="16" rx="7" ry="5" stroke="#4db6ac" stroke-width="1.8"/>
-            <circle cx="12" cy="16" r="2.2" fill="#4db6ac"/>
-            <path d="M22 10c3 0 5.5 2.2 5.5 5.5 0 4-5.5 9.5-5.5 9.5S16.5 19.5 16.5 15.5C16.5 12.2 19 10 22 10z" fill="#64b5f6" opacity="0.9"/>
-            <path d="M24 24h6v2.5a1.5 1.5 0 01-1.5 1.5H19.5A1.5 1.5 0 0118 26.5V24h2" stroke="#90caf9" stroke-width="1.4" stroke-linecap="round"/>
+            <ellipse cx="12" cy="16" rx="7" ry="5" stroke="#7dd3fc" stroke-width="1.8"/>
+            <circle cx="12" cy="16" r="2.2" fill="#7dd3fc"/>
+            <path d="M22 10c3 0 5.5 2.2 5.5 5.5 0 4-5.5 9.5-5.5 9.5S16.5 19.5 16.5 15.5C16.5 12.2 19 10 22 10z" fill="#60a5fa" opacity="0.9"/>
+            <path d="M24 24h6v2.5a1.5 1.5 0 01-1.5 1.5H19.5A1.5 1.5 0 0118 26.5V24h2" stroke="#93c5fd" stroke-width="1.4" stroke-linecap="round"/>
           </svg>
         </div>
         <div class="brand-text">
@@ -955,7 +1120,7 @@
 
       <div class="header-center">
         <div class="queue-title">Patient Queue Display</div>
-        <div class="queue-sub urdu">مریضوں کی قطار — براہ کرم اپنی باری کا انتظار کریں</div>
+        <div class="queue-sub urdu">براہ کرم اپنی باری کا انتظار کریں</div>
       </div>
 
       <div class="header-time">
@@ -1001,40 +1166,44 @@
       <article class="room-card r1" id="card-room1">
         <div class="room-ribbon">Calling</div>
         <div class="room-card-header">
-          <div class="room-id-block">
+          <div class="room-no-banner">Room no 1</div>
+          <div class="room-header-divider" aria-hidden="true"></div>
+          <div class="room-header-info">
             <div class="room-icon" aria-hidden="true">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2a5 5 0 00-5 5v1H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2h-1V7a5 5 0 00-5-5z" stroke="#fff" stroke-width="1.6"/>
                 <path d="M9 14h6M12 11v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
               </svg>
             </div>
-            <div class="room-meta">
-              <div class="room-no-tag">Room no 1</div>
-              <div class="room-title">Consultation</div>
-              <div class="room-doctor">Dr. Zahid Chaudhry</div>
+            <div class="room-header-text">
+              <div class="room-subtitle">Consultant Dr. Zahid Chaudhry</div>
+              <div class="room-header-urdu urdu">مشاورت — ڈاکٹر زاہد چوہدری کا دفتر</div>
             </div>
-          </div>
-          <div class="room-header-aside">
-            <div class="room-header-urdu urdu">مشاورت — ڈاکٹر زاہد چوہدری</div>
             <div class="room-status-pill" id="status-room1">Waiting</div>
           </div>
         </div>
         <div class="room-card-body">
           <div class="room-card-glow"></div>
-          <div class="serving-label">Now Serving</div>
-          <div class="token-wrap">
-            <div class="token-ring" aria-hidden="true"></div>
-            <div class="token-display" id="token-room1">—</div>
+          <div class="token-stage">
+            <div class="serving-label">Now Serving</div>
+            <div class="token-wrap">
+              <div class="token-ring" aria-hidden="true"></div>
+              <div class="token-display" id="token-room1">—</div>
+            </div>
           </div>
-          <div class="proceed-label">Please proceed to Room no 1</div>
-          <div class="proceed-label urdu" id="urdu-room1">ٹوکن نمبر — کمرہ نمبر ایک میں آ جائیں</div>
+          <div class="proceed-labels">
+            <div class="proceed-label">Please proceed to Room no 1</div>
+            <div class="proceed-label urdu" id="urdu-room1">ٹوکن نمبر — کمرہ نمبر 1 میں آ جائیں</div>
+          </div>
         </div>
       </article>
 
       <article class="room-card r2" id="card-room2">
         <div class="room-ribbon">Calling</div>
         <div class="room-card-header">
-          <div class="room-id-block">
+          <div class="room-no-banner">Room no 2</div>
+          <div class="room-header-divider" aria-hidden="true"></div>
+          <div class="room-header-info">
             <div class="room-icon" aria-hidden="true">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
                 <ellipse cx="12" cy="12" rx="8" ry="5.5" stroke="#fff" stroke-width="1.6"/>
@@ -1042,25 +1211,26 @@
                 <path d="M4 12H2M22 12h-2M12 4V2M12 22v-2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
               </svg>
             </div>
-            <div class="room-meta">
-              <div class="room-no-tag">Room no 2</div>
-              <div class="room-title">Basic eye Checkup and Counseling room</div>
+            <div class="room-header-text">
+              <div class="room-subtitle">Basic eye Checkup and Counseling room</div>
+              <div class="room-header-urdu urdu">بنیادی آنکھ کا معائنہ اور مشاورت کا کمرہ</div>
             </div>
-          </div>
-          <div class="room-header-aside">
-            <div class="room-header-urdu urdu">بنیادی آنکھ کا معائنہ اور مشاورت کا کمرہ</div>
             <div class="room-status-pill" id="status-room2">Waiting</div>
           </div>
         </div>
         <div class="room-card-body">
           <div class="room-card-glow"></div>
-          <div class="serving-label">Now Serving</div>
-          <div class="token-wrap">
-            <div class="token-ring" aria-hidden="true"></div>
-            <div class="token-display" id="token-room2">—</div>
+          <div class="token-stage">
+            <div class="serving-label">Now Serving</div>
+            <div class="token-wrap">
+              <div class="token-ring" aria-hidden="true"></div>
+              <div class="token-display" id="token-room2">—</div>
+            </div>
           </div>
-          <div class="proceed-label">Please proceed to Room no 2</div>
-          <div class="proceed-label urdu" id="urdu-room2">ٹوکن نمبر — کمرہ نمبر دو میں آ جائیں</div>
+          <div class="proceed-labels">
+            <div class="proceed-label">Please proceed to Room no 2</div>
+            <div class="proceed-label urdu" id="urdu-room2">ٹوکن نمبر — کمرہ نمبر 2 میں آ جائیں</div>
+          </div>
         </div>
       </article>
     </div>
@@ -1181,8 +1351,8 @@
         const urduEl = document.getElementById(`urdu-${roomKey}`);
         if (urduEl) {
           urduEl.textContent = roomKey === 'room1'
-            ? 'ٹوکن نمبر — کمرہ نمبر ایک میں آ جائیں'
-            : 'ٹوکن نمبر — کمرہ نمبر دو میں آ جائیں';
+            ? 'ٹوکن نمبر — کمرہ نمبر 1 میں آ جائیں'
+            : 'ٹوکن نمبر — کمرہ نمبر 2 میں آ جائیں';
         }
       }
     }

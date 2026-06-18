@@ -15,8 +15,8 @@ const URDU_NUMBERS = [
 ];
 
 export const ROOM_PHRASES: Record<string, string> = {
-  room1: 'کمرہ نمبر ایک',
-  room2: 'کمرہ نمبر دو',
+  room1: 'کمرہ نمبر 1',
+  room2: 'کمرہ نمبر 2',
 };
 
 /** Compound Hindi number words 0–99 for Swara TTS (22 = बाईस, not बीस दो). */
@@ -80,9 +80,9 @@ function tokenToSpokenNumber(tokenNumber: number | string): string {
     .join(' ');
 }
 
-/** Urdu text for on-screen display and captions. */
+/** Urdu text for on-screen display and captions (Western digits for token & room). */
 export function buildAnnouncement(tokenNumber: number | string, roomKey: string): string {
-  const token = tokenToUrduNumber(tokenNumber);
+  const token = String(tokenNumber);
   const room = ROOM_PHRASES[roomKey] ?? roomKey;
   return `ٹوکن نمبر ${token}، ${room} میں آ جائیں`;
 }

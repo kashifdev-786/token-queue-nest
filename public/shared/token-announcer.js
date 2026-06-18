@@ -16,8 +16,8 @@
     'اکانوے', 'بانوے', 'ترانوے', 'چورانوے', 'پچانوے', 'چھیانوے', 'ستانوے', 'اٹھانوے', 'ننانوے',
   ];
   const ROOM_PHRASES = {
-    room1: 'کمرہ نمبر ایک',
-    room2: 'کمرہ نمبر دو',
+    room1: 'کمرہ نمبر 1',
+    room2: 'کمرہ نمبر 2',
   };
   const SILENT_WAV =
     'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
@@ -67,7 +67,7 @@
   }
 
   function buildAnnouncement(tokenNumber, roomKeyOrName) {
-    const token = tokenToUrduNumber(tokenNumber);
+    const token = String(tokenNumber);
     const room = ROOM_PHRASES[roomKeyOrName] || roomKeyOrName;
     return `ٹوکن نمبر ${token}، ${room} میں آ جائیں`;
   }
