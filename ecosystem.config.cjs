@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'TokenQueue',
-      script: 'dist/main.js',
+      script: 'server.js',
       cwd: __dirname,
       instances: 1,
       autorestart: true,

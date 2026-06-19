@@ -2,23 +2,40 @@
 
 Real-time LAN token display for **Zahid clinic Eye & Dental**, with staff panels for Room 1 and Room 2 and **Urdu voice announcements** on the hall display.
 
-This product is deployed on **Windows Server** in the clinic. See the full deployment guide:
+This product is deployed on a **Windows PC** in the clinic. See the deployment guide for your OS:
 
-**→ [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md)**
+| OS | Guide |
+|----|-------|
+| Windows 10 / Windows Server | [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md) |
+| **Windows 7** (no PowerShell) | [WINDOWS-7-DEPLOYMENT.md](./WINDOWS-7-DEPLOYMENT.md) — use **`windows\*.bat`** scripts |
 
 ---
 
 ## Quick start (development / testing)
 
-Requires **Node.js v20+**.
+Requires **Node.js 12+** (use **Node 12 or 13** on Windows 7).
 
-```powershell
+```bash
 cd token-queue-nest
 npm install
 npm start
 ```
 
+The server is plain JavaScript (`server.js`) — no TypeScript build step.
+
+On **Windows 7** (Command Prompt only — no PowerShell): copy the project to the server, then double-click `windows\install-and-build.bat` and `windows\start-server.bat`. See [WINDOWS-7-DEPLOYMENT.md](./WINDOWS-7-DEPLOYMENT.md).
+
 Production runs on **Windows Server** at the clinic (develop on Mac, deploy to Windows). See [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md) for the full Mac → Windows step-by-step guide.
+
+## Project structure
+
+| Path | Purpose |
+|------|---------|
+| `server.js` | Main server (Express + Socket.IO + TTS) |
+| `lib/` | Announcement and Edge TTS helpers |
+| `public/` | Display and staff panel pages |
+| `windows/` | Windows `.bat` install/start scripts |
+| `ecosystem.config.cjs` | PM2 config for Windows Server |
 
 ---
 
@@ -55,4 +72,5 @@ Replace `SERVER_IP` with your Windows Server LAN address (example: `192.168.1.10
 
 | Document | Purpose |
 |----------|---------|
-| [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md) | Full Windows Server install, firewall, PM2 process manager, troubleshooting |
+| [WINDOWS-SERVER-DEPLOYMENT.md](./WINDOWS-SERVER-DEPLOYMENT.md) | Windows 10/Server install, firewall, PM2, troubleshooting |
+| [WINDOWS-7-DEPLOYMENT.md](./WINDOWS-7-DEPLOYMENT.md) | Windows 7 + Command Prompt (`.bat` scripts, no PowerShell) |

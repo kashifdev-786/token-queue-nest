@@ -5,8 +5,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Token Queue Server",
-      "runtimeArgs": ["-r", "ts-node/register", "-r", "tsconfig-paths/register"],
-      "args": ["${workspaceFolder}/src/main.ts"],
+      "program": "${workspaceFolder}/server.js",
       "cwd": "${workspaceFolder}",
       "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal"

@@ -2,6 +2,10 @@
 
 Development happens on your **Mac**. Production runs on a **Windows Server** PC at the clinic. Clinic TVs and tablets connect over the LAN.
 
+The server is **plain JavaScript** (`server.js`) — no TypeScript, **no build step**. Run `npm install` then `npm start`.
+
+> **Windows 7 or PowerShell not working?** Use [WINDOWS-7-DEPLOYMENT.md](./WINDOWS-7-DEPLOYMENT.md) instead. It uses **Command Prompt** and the **`windows\*.bat`** scripts (no PowerShell, no PM2 required).
+
 This guide labels every step with the machine where it runs:
 
 | Label | Machine |
@@ -19,8 +23,8 @@ This guide labels every step with the machine where it runs:
 | 1 | Mac | Install Node.js; develop and test locally |
 | 2 | Mac | Prepare project files to copy to the server |
 | 3 | Windows Server | Install Node.js |
-| 4 | Windows Server | Copy project from Mac; `npm install`; `npm run build` |
-| 5 | Windows Server | Test run, open firewall, set static LAN IP |
+| 4 | Windows Server | Copy project from Mac; `npm install` |
+| 5 | Windows Server | Test run (`npm start`), open firewall, set static LAN IP |
 | 6 | Windows Server | Install PM2; auto-start on boot |
 | 7 | Clinic devices | Open display and staff panel URLs |
 | 8 | Mac → Windows Server | Repeat Steps 2 and 4–6 when you release updates |
@@ -31,7 +35,7 @@ This guide labels every step with the machine where it runs:
 
 | Component | Role |
 |-----------|------|
-| **Windows Server** | Runs Node.js app on port **4789** |
+| **Windows Server** | Runs `server.js` (Node.js) on port **4789** |
 | **Hall TV / projector** | Opens `/display` in Chrome or Edge (fullscreen) |
 | **Room 1 tablet/PC** | Opens `/room1` for consultation tokens |
 | **Room 2 tablet/PC** | Opens `/room2` for checkup tokens |
@@ -49,7 +53,7 @@ All clinic devices must be on the **same local network** as the server.
 | Item | Recommendation |
 |------|----------------|
 | OS | macOS (current version) |
-| Node.js | **v20 LTS** or **v22 LTS** ([https://nodejs.org](https://nodejs.org)) |
+| Node.js | **v18 LTS** or newer ([https://nodejs.org](https://nodejs.org)); any **v12+** works |
 | Git | Optional — for pulling updates on Mac before copying to server |
 
 ### Windows Server (production)
@@ -59,7 +63,7 @@ All clinic devices must be on the **same local network** as the server.
 | OS | Windows Server 2019, 2022, or Windows 10/11 Pro (standalone clinic PC) |
 | RAM | 2 GB minimum, 4 GB recommended |
 | Disk | 500 MB free for Node.js + app |
-| Node.js | **v20 LTS** or **v22 LTS** ([https://nodejs.org](https://nodejs.org)) |
+| Node.js | **v18 LTS** or **v20 LTS** ([https://nodejs.org](https://nodejs.org)); minimum **v12** |
 | Network | Static LAN IP for the server (example: `192.168.1.10`) |
 
 ### Clinic devices
@@ -87,13 +91,13 @@ node -v
 npm -v
 ```
 
-You should see versions such as `v20.x.x` and `10.x.x`.
+You should see versions such as `v18.x.x` or `v20.x.x`.
 
 ---
 
 ## Step 2 — Develop and test on Mac
 
-Clone or open the project on your Mac, then install dependencies and start the dev server:
+Clone or open the project on your Mac, then install dependencies and start the server:
 
 ```bash
 cd ~/Backend/token-queue-nest   # adjust to your local path
@@ -110,52 +114,44 @@ Open in your Mac browser:
 | Room 2 panel | `http://localhost:4789/room2` |
 | Urdu TTS sample | `http://localhost:4789/api/tts?token=1&room=room1` |
 
-Stop the dev server with **Ctrl+C** when finished testing.
+Stop the server with **Ctrl+C** when finished testing.
 
-> **Note:** Urdu TTS on Mac also needs internet access, same as on Windows Server.
-
----
-
-## Step 3 — Verify production build on Mac (optional)
-
-Before copying to the server, confirm the project builds cleanly on your Mac:
-
-```bash
-cd ~/Backend/token-queue-nest
-npm run build
-ls dist/main.js
-```
-
-This is a sanity check only. The **production build that actually runs in the clinic must be built again on Windows Server** (Step 6).
+> **Note:** Urdu TTS on Mac also needs internet access, same as on Windows Server. There is **no compile step** — the same `server.js` runs on Mac and Windows.
 
 ---
 
-## Step 4 — Prepare files to copy to Windows Server
+## Step 3 — Prepare files to copy to Windows Server
 
 On your **Mac**, gather the project folder to transfer to the clinic server.
 
 ### What to include
 
-Copy the full project **except** `node_modules`, `dist`, and `.env` files:
+Copy the full project **except** `node_modules` and `.env` files:
 
 ```
 token-queue-nest\
+  server.js
+  lib\
   package.json
   package-lock.json
-  tsconfig.json
   ecosystem.config.cjs
-  src\
+  windows\
   public\
 ```
 
-`ecosystem.config.cjs` is included in the repo — PM2 uses it on the server.
+| Folder / file | Purpose |
+|---------------|---------|
+| `server.js` | Main entry — Express + Socket.IO + TTS API |
+| `lib\` | Announcement text and Edge TTS helpers |
+| `public\` | Display and staff panel HTML |
+| `ecosystem.config.cjs` | PM2 config (optional; points to `server.js`) |
+| `windows\` | `.bat` scripts when PowerShell is unavailable ([WINDOWS-7-DEPLOYMENT.md](./WINDOWS-7-DEPLOYMENT.md)) |
 
 ### What NOT to copy
 
 | Exclude | Reason |
 |---------|--------|
 | `node_modules\` | Built for your Mac — reinstall on Windows with `npm install` |
-| `dist\` | Rebuild on Windows with `npm run build` |
 | `.env` | Not used by this app; avoid copying secrets by habit |
 
 ### How to transfer Mac → Windows Server
@@ -195,27 +191,30 @@ node -v
 npm -v
 ```
 
-You should see versions such as `v20.x.x` and `10.x.x`.
+You should see versions such as `v18.x.x` and `10.x.x`.
+
+**Alternative (no PowerShell):** double-click `windows\check-environment.bat` in Command Prompt.
 
 ---
 
-## Step 6 — Install dependencies and build on Windows Server
+## Step 6 — Install dependencies on Windows Server
 
-Open **PowerShell** on the **Windows Server** (Administrator not required unless folder permissions block writes):
+Open **PowerShell** or **Command Prompt** on the **Windows Server** (Administrator not required unless folder permissions block writes):
 
 ```powershell
 cd C:\Apps\token-queue-nest
 npm install
-npm run build
 ```
 
-Verify the build output:
+**Or** double-click `windows\install-and-build.bat` (runs `npm install` only — no build step).
+
+Verify the main file exists:
 
 ```powershell
-dir dist\main.js
+dir server.js
 ```
 
-> **Important:** Always run `npm install` and `npm run build` on the **Windows Server**, even if you already built on Mac. Do not copy `node_modules` or `dist` from your Mac.
+> **Important:** Always run `npm install` on the **Windows Server**. Do not copy `node_modules` from your Mac.
 
 ---
 
@@ -225,17 +224,20 @@ On the **Windows Server**, start the app once to confirm it works before setting
 
 ```powershell
 cd C:\Apps\token-queue-nest
-npm run start:prod
+npm start
 ```
+
+**Or** double-click `windows\start-server.bat`.
 
 You should see output similar to:
 
 ```
-✅ Token Queue Server (NestJS) running
+Token Queue Server running
    Local:   http://localhost:4789
    Display: http://192.168.1.10:4789/display
    Room 1:  http://192.168.1.10:4789/room1
    Room 2:  http://192.168.1.10:4789/room2
+   Urdu TTS: http://192.168.1.10:4789/api/tts?test=1
 ```
 
 Note the **Display / Room URLs** and your server LAN IP.
@@ -276,6 +278,19 @@ New-NetFirewallRule `
 ```
 
 Use `-Profile Domain,Private,Public` only if you understand the security impact on public networks. For a clinic LAN, **Private** is usually enough.
+
+**Alternative (Command Prompt as Administrator):**
+
+```cmd
+cd /d C:\Apps\token-queue-nest
+windows\open-firewall.bat
+```
+
+Or:
+
+```cmd
+netsh advfirewall firewall add rule name="Zahid Clinic Token Queue" dir=in action=allow protocol=TCP localport=4789
+```
 
 ### 8.2 Firewall rule (GUI alternative)
 
@@ -584,7 +599,7 @@ Or without the ecosystem file:
 
 ```powershell
 cd C:\Apps\token-queue-nest
-pm2 start dist/main.js --name TokenQueue
+pm2 start server.js --name TokenQueue
 ```
 
 Verify on the **Windows Server**:
@@ -766,12 +781,11 @@ pm2 stop TokenQueue
 
 2. Replace updated files in `C:\Apps\token-queue-nest` (USB copy, file share, or `git pull`).
 
-3. Reinstall and rebuild (always rebuild after any `src\` or `public\` change; run `npm install` only if `package.json` changed):
+3. Reinstall dependencies (run `npm install` only if `package.json` changed; always re-copy `server.js`, `lib\`, and `public\` when those change):
 
 ```powershell
 cd C:\Apps\token-queue-nest
 npm install
-npm run build
 ```
 
 4. Restart the app:
@@ -791,16 +805,16 @@ pm2 save
 
 | Problem | Machine | What to check |
 |---------|---------|----------------|
-| Build fails on Mac | **Mac** | `npm install`; read TypeScript errors in Terminal |
-| Build fails on server | **Windows Server** | Run `npm run build` manually; do not use Mac `dist\` |
+| `npm install` fails on Mac | **Mac** | Read errors in Terminal; confirm Node.js v12+ |
+| `npm install` fails on server | **Windows Server** | Run `npm install` manually; do not copy Mac `node_modules` |
 | Cannot open URLs from other PCs | **Windows Server** | Firewall rule for port 4789; server and clients on same subnet |
 | Page loads but tokens don’t update | **Windows Server** | `pm2 status` — is TokenQueue **online**? Check `logs\pm2-error.log` |
 | No Urdu voice | **Windows Server** + **display** | Server needs **internet** for TTS; display speaker not muted; tap screen once if needed |
 | “TTS unavailable” on display | **Windows Server** | Outbound HTTPS for Edge TTS; open TTS URL in server browser |
 | Wrong IP after reboot | **Windows Server** | Complete **Step 8.4** (static IP or DHCP reservation); run reboot test **Step 8.5.5** |
-| PM2 app won’t start | **Windows Server** | Run `node dist\main.js` manually; then `pm2 logs TokenQueue --err --lines 50` |
+| PM2 app won’t start | **Windows Server** | Run `node server.js` manually; then `pm2 logs TokenQueue --err --lines 50` |
 | PM2 not running after reboot | **Windows Server** | Re-run Step 9.5; confirm `pm2 save`; check auto-login or PM2 service |
-| Port 4789 in use | **Windows Server** | `netstat -ano \| findstr :4789` — stop conflicting app or change `APP_PORT` in `src\app.config.ts`, rebuild on server |
+| Port 4789 in use | **Windows Server** | `netstat -ano \| findstr :4789` — stop conflicting app or set `PORT` env var (see below) |
 
 ### Test TTS from Windows Server browser
 
@@ -811,6 +825,13 @@ http://localhost:4789/api/tts?token=5&room=room1
 ```
 
 Audio playback or download means TTS is working.
+
+### Change the server port
+
+Default port is **4789**. To use another port:
+
+- Set environment variable `PORT` before starting (e.g. `set PORT=4790` in cmd, then `npm start`), **or**
+- Edit `APP_PORT` at the top of `server.js` and restart.
 
 ### View PM2 logs on Windows Server
 
@@ -836,8 +857,7 @@ Get-Content C:\Apps\token-queue-nest\logs\pm2-error.log -Tail 50
 ```bash
 cd ~/Backend/token-queue-nest
 npm install
-npm start              # dev server
-npm run build          # optional sanity check before deploy
+npm start              # runs server.js on port 4789
 ```
 
 ### Windows Server (production)
@@ -845,8 +865,7 @@ npm run build          # optional sanity check before deploy
 ```powershell
 cd C:\Apps\token-queue-nest
 npm install
-npm run build
-npm run start:prod     # manual test only
+npm start              # manual test only
 
 pm2 start ecosystem.config.cjs
 pm2 status
@@ -854,6 +873,8 @@ pm2 restart TokenQueue
 pm2 logs TokenQueue
 pm2 save
 ```
+
+**Command Prompt alternative:** use `windows\install-and-build.bat`, `windows\start-server.bat`, and `windows\setup-autostart.bat` (see [WINDOWS-7-DEPLOYMENT.md](./WINDOWS-7-DEPLOYMENT.md)).
 
 ### Clinic devices
 
@@ -870,13 +891,15 @@ http://SERVER_IP:4789/room2
 ### Mac
 
 - [ ] Node.js installed; `npm start` works locally
-- [ ] Optional: `npm run build` succeeds on Mac
+- [ ] Display, Room 1, and Room 2 URLs load in browser
+- [ ] TTS test URL plays or downloads audio
 
 ### Windows Server
 
 - [ ] Node.js installed and in PATH
-- [ ] Project copied from Mac (without `node_modules` or `dist`)
-- [ ] `npm install` and `npm run build` completed without errors on Windows
+- [ ] Project copied from Mac (without `node_modules`)
+- [ ] `npm install` completed without errors on Windows
+- [ ] `server.js` present; `npm start` shows running URLs
 - [ ] Windows Firewall allows inbound TCP 4789 on LAN
 - [ ] Static LAN IP configured and verified (Step 8.3–8.5; reboot test passed)
 - [ ] PM2 installed; `TokenQueue` process saved and auto-start configured (Step 9.5)
